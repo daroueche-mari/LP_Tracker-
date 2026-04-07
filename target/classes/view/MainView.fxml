@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox spacing="10" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controller.StudentController">
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+
+    <Label text="Gestion des Étudiants (LP Tracker)" style="-fx-font-size: 20; -fx-font-weight: bold;"/>
+    
+    <GridPane hgap="10" vgap="10">
+        <TextField fx:id="fNameInput" promptText="Prénom" GridPane.columnIndex="0" GridPane.rowIndex="0" HBox.hgrow="ALWAYS"/>
+        <TextField fx:id="lNameInput" promptText="Nom" GridPane.columnIndex="1" GridPane.rowIndex="0" HBox.hgrow="ALWAYS"/>
+        <TextField fx:id="ageInput" promptText="Âge" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+        <TextField fx:id="gradeInput" promptText="Note" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+    </GridPane>
+    
+    <HBox spacing="10">
+        <Button text="➕ Ajouter" onAction="#handleAddStudent" 
+                maxWidth="Infinity" HBox.hgrow="ALWAYS" 
+                style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold;"/>
+        
+        <Button text="🔄 Modifier" onAction="#handleUpdateStudent" 
+                maxWidth="Infinity" HBox.hgrow="ALWAYS" 
+                style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold;"/>
+        
+        <Button text="🗑️ Supprimer" onAction="#handleDeleteStudent" 
+                maxWidth="Infinity" HBox.hgrow="ALWAYS" 
+                style="-fx-background-color: #F44336; -fx-text-fill: white; -fx-font-weight: bold;"/>
+    </HBox>
+    
+    <Separator/>
+    
+    <TextField fx:id="searchField" promptText="🔍 Rechercher un étudiant par nom..." onKeyReleased="#handleSearch"/>
+    
+    <TableView fx:id="studentTable" VBox.vgrow="ALWAYS" onMouseClicked="#handleTableClick">
+    <columns>
+        <TableColumn fx:id="colFirstName" text="Prénom" prefWidth="150"/>
+        <TableColumn fx:id="colLastName" text="Nom" prefWidth="150"/>
+        <TableColumn fx:id="colAge" text="Âge" prefWidth="80"/>
+        <TableColumn fx:id="colGrade" text="Note" prefWidth="100"/>
+    </columns>
+    <columnResizePolicy>
+        <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+    </columnResizePolicy>
+</TableView>
+<Label fx:id="statsLabel" text="Chargement des stats..." style="-fx-font-style: italic; -fx-text-fill: #555;" />
+</VBox>
