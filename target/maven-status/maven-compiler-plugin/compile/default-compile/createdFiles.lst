@@ -1,4 +1,4 @@
-dao\StudentDAO.class
 Main.class
-dao\DatabaseConnection.class
 model\Student.class
+dao\StudentDAO.class
+dao\DatabaseConnection.class

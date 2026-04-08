@@ -30,11 +30,36 @@
         <Button text="🗑️ Supprimer" onAction="#handleDeleteStudent" 
                 maxWidth="Infinity" HBox.hgrow="ALWAYS" 
                 style="-fx-background-color: #F44336; -fx-text-fill: white; -fx-font-weight: bold;"/>
+        
+    </HBox>
+
+    <HBox spacing="10">
+        <Button text="📥 Exporter en CSV" onAction="#handleExportCSV" 
+                maxWidth="Infinity" HBox.hgrow="ALWAYS" 
+                style="-fx-background-color: #607D8B; -fx-text-fill: white; -fx-font-weight: bold;"/>
+        
+        <Button text="🚪 Déconnexion" onAction="#handleLogout" 
+                maxWidth="Infinity" HBox.hgrow="ALWAYS" 
+                style="-fx-background-color: #37474F; -fx-text-fill: white; -fx-font-weight: bold;"/>
+    </HBox>
+    <HBox spacing="10">
+    <Button text="📥 Importer CSV" onAction="#handleImportCSV" 
+            maxWidth="Infinity" HBox.hgrow="ALWAYS" 
+            style="-fx-background-color: #795548; -fx-text-fill: white; -fx-font-weight: bold;"/>
+    
+    <Button text="📄 Rapport HTML" onAction="#handleExportHTML" 
+            maxWidth="Infinity" HBox.hgrow="ALWAYS" 
+            style="-fx-background-color: #FF9800; -fx-text-fill: white; -fx-font-weight: bold;"/>
     </HBox>
     
     <Separator/>
     
-    <TextField fx:id="searchField" promptText="🔍 Rechercher un étudiant par nom..." onKeyReleased="#handleSearch"/>
+    <HBox spacing="10" alignment="CENTER_LEFT">
+    <TextField fx:id="searchNameField" promptText="Rechercher par nom..." onKeyReleased="#handleAdvancedSearch"/>
+    <TextField fx:id="minGradeField" promptText="Note min (ex: 10)" prefWidth="100" onKeyReleased="#handleAdvancedSearch"/>
+    <ComboBox fx:id="ageFilterCombo" promptText="Âge" onAction="#handleAdvancedSearch"/>
+    <Button text="Réinitialiser" onAction="#resetFilters" style="-fx-background-color: #f44336; -fx-text-fill: white;"/>
+    </HBox>    
     
     <TableView fx:id="studentTable" VBox.vgrow="ALWAYS" onMouseClicked="#handleTableClick">
     <columns>
