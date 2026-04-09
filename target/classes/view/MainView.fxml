@@ -54,14 +54,21 @@
     
     <Separator/>
     
-    <HBox spacing="10" alignment="CENTER_LEFT">
-    <TextField fx:id="searchNameField" promptText="Rechercher par nom..." onKeyReleased="#handleAdvancedSearch"/>
-    <TextField fx:id="minGradeField" promptText="Note min (ex: 10)" prefWidth="100" onKeyReleased="#handleAdvancedSearch"/>
-    <ComboBox fx:id="ageFilterCombo" promptText="Âge" onAction="#handleAdvancedSearch"/>
-    <Button text="Réinitialiser" onAction="#resetFilters" style="-fx-background-color: #f44336; -fx-text-fill: white;"/>
-    </HBox>    
+    <HBox spacing="10" alignment="CENTER_LEFT" style="-fx-padding: 10;">
+    <TextField fx:id="searchFirstNameField" promptText="Prénom..." 
+               onKeyReleased="#handleAdvancedSearch" prefWidth="150"/>
     
-    <TableView fx:id="studentTable" VBox.vgrow="ALWAYS" onMouseClicked="#handleTableClick">
+    <TextField fx:id="searchLastNameField" promptText="Nom..." 
+               onKeyReleased="#handleAdvancedSearch" prefWidth="150"/>
+    
+    <ComboBox fx:id="ageFilterCombo" promptText="Âge" 
+              onAction="#handleAdvancedSearch" prefWidth="80"/>
+    
+    <Button text="Réinitialiser" onAction="#handleResetFilters" 
+            style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;"/>
+    </HBox>
+    
+    <TableView fx:id="studentTable" VBox.vgrow="ALWAYS" prefHeight="300" onMouseClicked="#handleTableClick">
     <columns>
         <TableColumn fx:id="colFirstName" text="Prénom" prefWidth="150"/>
         <TableColumn fx:id="colLastName" text="Nom" prefWidth="150"/>
@@ -72,5 +79,23 @@
         <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
     </columnResizePolicy>
 </TableView>
-<Label fx:id="statsLabel" text="Chargement des stats..." style="-fx-font-style: italic; -fx-text-fill: #555;" />
+<HBox spacing="20" alignment="CENTER" minHeight="50.0" prefHeight="50.0">
+    <padding>
+        <Insets top="10" bottom="10"/>
+    </padding>
+    
+    <Button text="⬅️ Précédent" onAction="#handlePrevPage" 
+            style="-fx-background-color: #7f8c8d; -fx-text-fill: white; -fx-cursor: hand;"/>
+            
+    <Label fx:id="pageLabel" text="Page 1" 
+           style="-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #2c3e50;"/>
+    
+    <Button text="Suivant ➡️" onAction="#handleNextPage" 
+            style="-fx-background-color: #7f8c8d; -fx-text-fill: white; -fx-cursor: hand;"/>
+</HBox>
+<Label fx:id="statsLabel" 
+       text="Chargement des stats..." 
+       wrapText="true" 
+       maxWidth="600"
+       style="-fx-font-style: italic; -fx-text-fill: #555; -fx-padding: 10 0 0 0;" />
 </VBox>

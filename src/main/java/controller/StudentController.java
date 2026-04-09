@@ -5,6 +5,8 @@ import java.util.List;
 
 import dao.StudentDAO;
 import model.Student;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -12,6 +14,9 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TableView;
 import javafx.scene.control.ComboBox;
+import javafx.util.Duration;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
@@ -26,43 +31,84 @@ public class StudentController {
     @FXML private TextField lNameInput;
     @FXML private TextField ageInput;
     @FXML private TextField gradeInput;
-
+    @FXML private TextField searchIdField;
     @FXML private TableView<Student> studentTable;
-
+    @FXML private TextField searchFirstNameField;
+    @FXML private TextField searchLastNameField;
     @FXML private TableColumn<Student, String> colFirstName;
     @FXML private TableColumn<Student, String> colLastName;
     @FXML private TableColumn<Student, Integer> colAge;
     @FXML private TableColumn<Student, Double> colGrade;
-
-    @FXML private Label statsLabel;
-
-    @FXML private TextField searchNameField;
-    @FXML private TextField minGradeField;
-    
+    @FXML private Label pageLabel;
+    @FXML private Label statsLabel;    
     @FXML private ComboBox<Integer> ageFilterCombo;
-
+    private int currentPage = 0;
+    private final int ROWS_PER_PAGE = 10;
     private StudentDAO dao = new StudentDAO();
 
     @FXML
     public void initialize() {
-        // 1. Liaison colonnes <-> attributs du modèle Student
+        // ... Garde ton code Timeline et cellValueFactory ...
+        Timeline autoSave = new Timeline(new KeyFrame(Duration.minutes(5), event -> {
+            dao.exportToCSV("autosave_students.csv");
+            System.out.println("✅ Sauvegarde automatique effectuée.");
+        }));
+        autoSave.setCycleCount(Timeline.INDEFINITE);
+        autoSave.play();
+
         colFirstName.setCellValueFactory(new PropertyValueFactory<>("firstName"));
         colLastName.setCellValueFactory(new PropertyValueFactory<>("lastName"));
         colAge.setCellValueFactory(new PropertyValueFactory<>("age"));
         colGrade.setCellValueFactory(new PropertyValueFactory<>("grade"));
 
-        // 2. Remplissage du ComboBox pour l'âge (ex: de 18 à 60 ans)
-        // Cela évite l'erreur "cannot be resolved" et permet de choisir un âge
         if (ageFilterCombo != null) {
             for (int i = 18; i <= 60; i++) {
                 ageFilterCombo.getItems().add(i);
             }
         }
 
-        // 3. Chargement initial des données
-        refreshTable();
+        // 3. CHARGEMENT INITIAL AVEC PAGINATION (La correction est ici)
+        currentPage = 0;      // On force le départ à la première page
+        updatePagedTable();   // On appelle la pagination au lieu de refreshTable()
+}
+    @FXML
+    private void handleNextPage() {
+        currentPage++;
+        updatePagedTable();
     }
 
+    @FXML
+    private void handlePrevPage() {
+        if (currentPage > 0) {
+            currentPage--;
+            updatePagedTable();
+        }
+    }
+
+    private void updatePagedTable() {
+    // 1. Calcul de l'index de départ
+    int offset = currentPage * ROWS_PER_PAGE;
+    List<Student> pagedList = dao.getStudentsPaged(ROWS_PER_PAGE, offset);
+    
+    // 2. Sécurité : si on arrive sur une page vide (ex: après une suppression)
+    if (pagedList.isEmpty() && currentPage > 0) {
+        currentPage--;
+        updatePagedTable(); // On relance pour afficher la page précédente
+        return;
+    }
+    
+    // 3. Mise à jour de la TableView
+    studentTable.setItems(FXCollections.observableArrayList(pagedList));
+    
+    // 4. MISE À JOUR DU LABEL (Indispensable pour le jury !)
+    if (pageLabel != null) {
+        pageLabel.setText("Page " + (currentPage + 1));
+    }
+
+    // 5. Mise à jour des stats (Optionnel mais recommandé)
+    // Cela permet de voir les stats globales même en changeant de page
+    statsLabel.setText(dao.getGlobalStats());
+}
     /**
      * Remplit les champs quand on clique sur une ligne du tableau
      */
@@ -145,7 +191,22 @@ public class StudentController {
             studentTable.setItems(filteredList);
         }
     }
-
+    @FXML
+    private void handleSearchByID() {
+        try {
+            int id = Integer.parseInt(searchIdField.getText()); // Récupère l'ID du TextField
+            Student s = dao.getStudentById(id);
+            
+            if (s != null) {
+                studentTable.setItems(FXCollections.observableArrayList(s));
+                updateStatsForSelection(List.of(s));
+            } else {
+                showAlert("Résultat", "Aucun étudiant trouvé avec l'ID : " + id);
+            }
+        } catch (NumberFormatException e) {
+            showAlert("Erreur", "Veuillez entrer un ID numérique valide.");
+        }
+    }
     private void updateStatsForSelection(List<Student> students) {
     if (students == null || students.isEmpty()) {
         statsLabel.setText("Aucun résultat trouvé pour ces critères.");
@@ -163,14 +224,26 @@ public class StudentController {
                        students.size(), avg));
 }
     @FXML
-    private void resetFilters() {
-        searchNameField.clear();
-        minGradeField.clear();
-        if (ageFilterCombo != null) ageFilterCombo.getSelectionModel().clearSelection();
-        
-        // On réaffiche tout le monde
-        refreshTable(); 
+    private void handleResetFilters() {
+    // 1. Vider les champs de texte
+    searchFirstNameField.clear();
+    searchLastNameField.clear();
+    
+    // 2. Réinitialiser la ComboBox proprement
+    if (ageFilterCombo != null) {
+        ageFilterCombo.getSelectionModel().clearSelection();
+        ageFilterCombo.setPromptText("Âge");
     }
+    
+    // 3. Réinitialiser la pagination
+    currentPage = 0; // TRÈS IMPORTANT : remettre à zéro AVANT d'appeler la méthode
+    updatePagedTable(); // Cette méthode s'occupe déjà de rafraîchir la table avec les 10 premiers
+    
+    // 4. Facultatif : Remettre le curseur dans le premier champ
+    searchFirstNameField.requestFocus();
+    
+    System.out.println("🔄 Filtres réinitialisés et retour à la page 1.");
+}
     @FXML
     private void handleExportCSV() {
         dao.exportToCSV("liste_etudiants.csv");
@@ -251,20 +324,23 @@ private void handleExportHTML() {
     }
     @FXML
     private void handleAdvancedSearch() {
-        String name = searchNameField.getText();
+        // On récupère les textes des deux champs distincts
+        String firstName = searchFirstNameField.getText(); // Assure-toi d'avoir ce fx:id
+        String lastName = searchLastNameField.getText();   // Et celui-ci
         
-        Double minGrade = null;
-        try {
-            if (!minGradeField.getText().isEmpty()) 
-                minGrade = Double.parseDouble(minGradeField.getText().replace(",", "."));
-        } catch (NumberFormatException e) { /* Ignorer si mal tapé */ }
+        Integer age = (ageFilterCombo != null) ? ageFilterCombo.getValue() : null;
 
-        Integer age = ageFilterCombo.getValue(); // Si tu as rempli le combo
-
-        List<Student> results = dao.findAdvanced(name, minGrade, age);
+        // Appel au DAO avec les nouveaux critères
+        List<Student> results = dao.findAdvanced(firstName, lastName, age);
+        
         studentTable.setItems(FXCollections.observableArrayList(results));
-        
-        // On met à jour les stats pour ne voir que les stats des résultats filtrés !
-        updateStatsForSelection(results); 
+        updateStatsForSelection(results);
     }
+    private void showAlert(String title, String content) {
+    Alert alert = new Alert(AlertType.INFORMATION);
+    alert.setTitle(title);
+    alert.setHeaderText(null);
+    alert.setContentText(content);
+    alert.showAndWait();
+}
 }

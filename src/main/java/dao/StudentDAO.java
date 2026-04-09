@@ -132,21 +132,36 @@ public class StudentDAO {
     return students;
 }
     public String getGlobalStats() {
-        String sql = "SELECT COUNT(*), AVG(grade) FROM student";
-        try (Connection conn = DatabaseConnection.getConnection();
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery(sql)) {
-            
-            if (rs.next()) {
-                int count = rs.getInt(1);
-                double avg = rs.getDouble(2);
-                return String.format("Total : %d étudiants | Moyenne Générale : %.2f/20", count, avg);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
+    // On récupère les infos globales ET la répartition par âge en une seule fois (ou deux requêtes)
+    String sqlGlobal = "SELECT COUNT(*), AVG(grade) FROM student";
+    String sqlGrouped = "SELECT age, COUNT(*) as nb FROM student GROUP BY age ORDER BY age";
+
+    try (Connection conn = DatabaseConnection.getConnection();
+         Statement stmt = conn.createStatement()) {
+        
+        StringBuilder stats = new StringBuilder();
+
+        // 1. Stats Globales
+        ResultSet rs1 = stmt.executeQuery(sqlGlobal);
+        if (rs1.next()) {
+            stats.append(String.format("📊 Total : %d étudiants | Moyenne : %.2f/20\n", 
+                         rs1.getInt(1), rs1.getDouble(2)));
         }
-        return "Stats indisponibles";
+
+        // 2. Répartition (sur une nouvelle ligne grâce au \n)
+        ResultSet rs2 = stmt.executeQuery(sqlGrouped);
+        stats.append("👥 Répartition : ");
+        while (rs2.next()) {
+            stats.append(rs2.getInt("age")).append(" ans (").append(rs2.getInt("nb")).append(")  ");
+        }
+        
+        return stats.toString();
+
+    } catch (SQLException e) {
+        e.printStackTrace();
+        return "Erreur lors du calcul des statistiques";
     }
+}
     public void exportToCSV(String filePath) {
     List<Student> students = getAllStudents();
     try (PrintWriter writer = new PrintWriter(new File(filePath))) {
@@ -158,6 +173,24 @@ public class StudentDAO {
     } catch (FileNotFoundException e) {
         e.printStackTrace();
     }
+}
+public void exportToJSON(String filePath) {
+    List<Student> students = getAllStudents();
+    try (java.io.PrintWriter writer = new java.io.PrintWriter(new java.io.File(filePath))) {
+        writer.println("[");
+        for (int i = 0; i < students.size(); i++) {
+            Student s = students.get(i);
+            writer.print("  {");
+            writer.print("\"id\": " + s.getId() + ", ");
+            writer.print("\"prenom\": \"" + s.getFirstName() + "\", ");
+            writer.print("\"nom\": \"" + s.getLastName() + "\", ");
+            writer.print("\"note\": " + s.getGrade());
+            writer.print("}");
+            if (i < students.size() - 1) writer.println(",");
+            else writer.println();
+        }
+        writer.println("]");
+    } catch (Exception e) { e.printStackTrace(); }
 }
 public void importFromCSV(String filePath) {
     String line;
@@ -200,53 +233,22 @@ public void exportResultsToHTML(String filePath) {
         System.out.println("🌐 Rapport HTML généré : " + filePath);
     } catch (Exception e) { e.printStackTrace(); }
 }
-public String getDetailedStats() {
-    String stats = "";
-    // Requête pour la moyenne générale, le nombre total et la répartition par âge
-    String sqlGlobal = "SELECT AVG(grade) as moyenne, COUNT(*) as total FROM student";
-    String sqlGrouped = "SELECT age, COUNT(*) as nb FROM student GROUP BY age ORDER BY age";
 
-    try (Connection conn = DatabaseConnection.getConnection();
-         Statement stmt = conn.createStatement()) {
-        
-        // 1. Stats Globales
-        ResultSet rs1 = stmt.executeQuery(sqlGlobal);
-        if (rs1.next()) {
-            stats += String.format("Moyenne : %.2f/20 | Total : %d élèves\n", 
-                                   rs1.getDouble("moyenne"), rs1.getInt("total"));
-        }
-
-        // 2. Répartition par âge (GROUP BY)
-        ResultSet rs2 = stmt.executeQuery(sqlGrouped);
-        stats += "Répartition : ";
-        while (rs2.next()) {
-            stats += rs2.getInt("age") + " ans (" + rs2.getInt("nb") + ") ";
-        }
-        
-    } catch (SQLException e) {
-        e.printStackTrace();
-    }
-    return stats;
-}
-public List<Student> findAdvanced(String name, Double minGrade, Integer age) {
+public List<Student> findAdvanced(String firstName, String lastName, Integer age) {
     List<Student> list = new ArrayList<>();
-    // Base de la requête
     StringBuilder sql = new StringBuilder("SELECT * FROM student WHERE 1=1");
     
-    // On ajoute les filtres seulement s'ils sont remplis
-    if (name != null && !name.isEmpty()) sql.append(" AND (first_name ILIKE ? OR last_name ILIKE ?)");
-    if (minGrade != null) sql.append(" AND grade >= ?");
+    // Filtres séparés pour Prénom et Nom
+    if (firstName != null && !firstName.isEmpty()) sql.append(" AND first_name ILIKE ?");
+    if (lastName != null && !lastName.isEmpty()) sql.append(" AND last_name ILIKE ?");
     if (age != null && age > 0) sql.append(" AND age = ?");
 
     try (Connection conn = DatabaseConnection.getConnection();
          PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
         
         int paramIndex = 1;
-        if (name != null && !name.isEmpty()) {
-            pstmt.setString(paramIndex++, "%" + name + "%");
-            pstmt.setString(paramIndex++, "%" + name + "%");
-        }
-        if (minGrade != null) pstmt.setDouble(paramIndex++, minGrade);
+        if (firstName != null && !firstName.isEmpty()) pstmt.setString(paramIndex++, "%" + firstName + "%");
+        if (lastName != null && !lastName.isEmpty()) pstmt.setString(paramIndex++, "%" + lastName + "%");
         if (age != null && age > 0) pstmt.setInt(paramIndex++, age);
 
         ResultSet rs = pstmt.executeQuery();
@@ -257,5 +259,35 @@ public List<Student> findAdvanced(String name, Double minGrade, Integer age) {
         }
     } catch (SQLException e) { e.printStackTrace(); }
     return list;
+}
+public List<Student> getStudentsPaged(int limit, int offset) {
+    List<Student> list = new ArrayList<>();
+    String sql = "SELECT * FROM student ORDER BY id LIMIT ? OFFSET ?";
+    
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        pstmt.setInt(1, limit);
+        pstmt.setInt(2, offset);
+        ResultSet rs = pstmt.executeQuery();
+        while (rs.next()) {
+            list.add(new Student(rs.getInt("id"), rs.getString("first_name"), 
+                                 rs.getString("last_name"), rs.getInt("age"), 
+                                 rs.getDouble("grade")));
+        }
+    } catch (SQLException e) { e.printStackTrace(); }
+    return list;
+}
+public Student getStudentById(int id) {
+    String sql = "SELECT * FROM student WHERE id = ?";
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        pstmt.setInt(1, id);
+        ResultSet rs = pstmt.executeQuery();
+        if (rs.next()) {
+            return new Student(rs.getInt("id"), rs.getString("first_name"), 
+                               rs.getString("last_name"), rs.getInt("age"), rs.getDouble("grade"));
+        }
+    } catch (SQLException e) { e.printStackTrace(); }
+    return null;
 }
 }
