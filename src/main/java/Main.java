@@ -9,20 +9,23 @@ public class Main extends Application {
     @Override
     public void start(Stage primaryStage) {
         try {
-            // 1. On charge maintenant LoginView au lieu de MainView
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/LoginView.fxml"));
+            // 1. On charge l'écran de bienvenue (WelcomeView)
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/WelcomeView.fxml"));
             Parent root = loader.load();
 
-            // 2. On prépare une scène plus petite pour le login
-            Scene scene = new Scene(root, 400, 350);
+            // 2. On prépare une scène adaptée au design (800x500 comme dans le FXML)
+            Scene scene = new Scene(root, 800, 500);
 
             // 3. Configuration de la fenêtre
-            primaryStage.setTitle("Authentification - LP Tracker");
+            primaryStage.setTitle("Bienvenue - LP Tracker");
             primaryStage.setScene(scene);
-            primaryStage.setResizable(false); // On bloque la taille pour le login
+            
+            // On peut autoriser le redimensionnement ou pas selon tes goûts
+            primaryStage.setResizable(true); 
+            primaryStage.centerOnScreen(); // Pour qu'elle apparaisse au milieu
             primaryStage.show();
 
-            System.out.println("🔐 Écran de connexion chargé. En attente d'authentification...");
+            System.out.println("🚀 Application lancée sur l'écran d'accueil.");
 
         } catch (Exception e) {
             System.err.println("❌ Erreur au démarrage : " + e.getMessage());

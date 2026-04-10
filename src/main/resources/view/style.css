@@ -1,0 +1,118 @@
+/* --- BOUTONS PRINCIPAUX (Orange) --- */
+.btn-primary {
+    -fx-background-color: #e67e22;
+    background-color: #e67e22;
+    -fx-text-fill: white;
+    -fx-background-radius: 5;
+    -fx-font-weight: bold;
+    font-weight: bold;
+    -fx-cursor: hand;
+    cursor: hand;
+    -fx-transition: 0.3s;
+    transition: 0.3s;
+}
+
+.btn-primary:hover {
+    -fx-background-color: #d35400; /* Orange plus foncé */
+    background-color: #d35400;
+    -fx-scale-x: 1.02;
+    -fx-scale-y: 1.02;
+}
+
+/* --- BOUTONS BIENVENUE (Arrondis) --- */
+.btn-welcome {
+    -fx-background-color: #e67e22;
+    background-color: #e67e22;
+    -fx-background-radius: 25;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    font-weight: bold;
+    -fx-cursor: hand;
+    cursor: hand;
+}
+
+.btn-welcome:hover {
+    -fx-background-color: #d35400;
+    background-color: #d35400;
+}
+
+.btn-primary:hover {
+    -fx-background-color: #d35400; /* Orange plus foncé */
+    background-color: #d35400;
+    -fx-scale-x: 1.02;
+    -fx-scale-y: 1.02;
+}
+
+/* --- BOUTONS BIENVENUE (Arrondis) --- */
+.btn-welcome {
+    -fx-background-color: #e67e22;
+    background-color: #e67e22;
+    -fx-background-radius: 25;
+    -fx-text-fill: white;
+    font-weight: bold;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+    cursor: hand;
+}
+
+.btn-welcome:hover {
+    -fx-background-color: #d35400;
+    background-color: #d35400;
+}
+
+.btn-outline {
+    background-color: transparent;
+    -fx-background-color: transparent;
+    border-color: white;
+    -fx-border-color: white;
+    border-radius: 25;
+    -fx-border-radius: 25;
+    -fx-text-fill: white;
+    -fx-cursor: hand;
+    cursor: hand;
+}
+
+.btn-outline:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    -fx-background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* --- BOUTONS LIENS (Retour / Inscription) --- */
+.btn-link {
+    background-color: transparent;
+    -fx-background-color: transparent;
+    -fx-text-fill: #7f8c8d;
+    -fx-cursor: hand;
+    cursor: hand;
+    -fx-underline: false;
+}
+
+.btn-link:hover {
+    -fx-text-fill: #2c3e50;
+    -fx-underline: true;
+}
+
+/* --- BOUTONS CRUD (Dashboard) --- */
+.btn-add {
+     background-color: #27ae60;
+     -fx-background-color: #27ae60; 
+     -fx-text-fill: white; 
+     -fx-cursor: hand; 
+     cursor: hand;
+}
+.btn-add:hover { 
+    -fx-background-color: #2ecc71; 
+    background-color: #2ecc71;
+}
+
+.btn-delete { 
+    -fx-background-color: #e74c3c;
+    background-color: #e74c3c; 
+    -fx-text-fill: white; 
+    -fx-cursor: hand; 
+    cursor: hand;
+}
+.btn-delete:hover { 
+    -fx-background-color: #c0392b; 
+    background-color: #c0392b;
+}

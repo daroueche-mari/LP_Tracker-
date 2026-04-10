@@ -9,7 +9,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<HBox prefHeight="500.0" prefWidth="800.0" stylesheets="@style.css" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controller.LoginController">
+<HBox prefHeight="500.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="controller.RegisterController">
    <children>
       <VBox alignment="CENTER" prefWidth="350.0" spacing="20.0" style="-fx-background-color: #e67e22;">
          <children>
@@ -18,12 +18,11 @@
                   <Font name="System Bold" size="32.0" />
                </font>
             </Label>
-            <Label text="Gestion de Classe" textFill="WHITE">
+            <Label text="Créer un compte" textFill="WHITE">
                <font>
                   <Font size="16.0" />
                </font>
             </Label>
-            <Button mnemonicParsing="false" onAction="#handleBackToWelcome" styleClass="btn-outline" text="← Retour" scaleX="0.8" scaleY="0.8" />
          </children>
       </VBox>
 
@@ -32,7 +31,7 @@
             <Insets left="50.0" right="50.0" />
          </padding>
          <children>
-            <Label text="Connexion" textFill="#2c3e50">
+            <Label text="Inscription" textFill="#2c3e50">
                <font>
                   <Font name="System Bold" size="26.0" />
                </font>
@@ -45,7 +44,7 @@
                         <Font name="System Bold" size="10.0" />
                      </font>
                   </Label>
-                  <TextField fx:id="usernameField" prefHeight="40.0" promptText="Ex: admin" />
+                  <TextField fx:id="usernameField" prefHeight="40.0" promptText="Ex: nouvel_utilisateur" style="-fx-background-radius: 5; -fx-border-color: #bdc3c7; -fx-border-radius: 5; -fx-background-color: white;" />
                </children>
             </VBox>
 
@@ -56,17 +55,17 @@
                         <Font name="System Bold" size="10.0" />
                      </font>
                   </Label>
-                  <PasswordField fx:id="passwordField" prefHeight="40.0" promptText="••••••••" />
+                  <PasswordField fx:id="passwordField" prefHeight="40.0" promptText="••••••••" style="-fx-background-radius: 5; -fx-border-color: #bdc3c7; -fx-border-radius: 5; -fx-background-color: white;" />
                </children>
             </VBox>
 
-            <Button mnemonicParsing="false" onAction="#handleLogin" prefHeight="45.0" prefWidth="450.0" styleClass="btn-primary" text="SE CONNECTER">
+            <Button mnemonicParsing="false" onAction="#handleRegister" prefHeight="45.0" prefWidth="450.0" style="-fx-background-color: #e67e22; -fx-text-fill: white; -fx-background-radius: 5; -fx-cursor: hand;" text="S'INSCRIRE">
                <font>
                   <Font name="System Bold" size="14.0" />
                </font>
             </Button>
 
-            <Button mnemonicParsing="false" onAction="#handleGoToRegister" styleClass="btn-link" text="Pas encore de compte ? S'inscrire" />
+            <Button mnemonicParsing="false" onAction="#handleBackToLogin" style="-fx-background-color: transparent; -fx-text-fill: #7f8c8d; -fx-cursor: hand;" text="Déjà un compte ? Se connecter" underline="true" />
 
             <Label fx:id="errorLabel" textFill="#e74c3c" wrapText="true">
                <font>
