@@ -1,36 +1,57 @@
-Feature Statut :
-- Authentification,✅
-- Import/Export CSV,✅
-- Rapport HTML (Resultats),✅
-- "Statistiques (AVG, COUNT, GROUP BY)",✅
-- Recherche Avancée,✅
-- Tri des colonnes,✅
-- Sauvegarde automatique,✅
+# 🎓 LP Tracker - Système de Gestion d'Étudiants
 
-1. Sécurité & Accès
-- Système d'Authentification : Création d'une table users en base de données et d'un écran de Login sécurisé au démarrage. Seuls les utilisateurs enregistrés peuvent accéder au tracker.
-- Déconnexion : Ajout d'une fonction pour quitter la session proprement et revenir à l'accueil.
+**LP Tracker** est une application de bureau moderne développée en **JavaFX**. Elle permet de gérer efficacement une base de données d'étudiants, d'analyser leurs performances et d'exporter les données sous divers formats professionnels.
 
-2. Statistiques & SQL Avancé
-- Analyse de données : Tu n'affiches plus seulement des lignes, tu les analyses. On a implémenté des requêtes utilisant les fonctions d'agrégation :
-- AVG() pour la moyenne générale.
-- COUNT() pour le nombre total d'élèves.
-- GROUP BY age pour voir la répartition démographique de la classe.
-- Mise à jour en temps réel : Les statistiques se recalculent automatiquement à chaque ajout, suppression ou filtrage.
+## 🚀 Fonctionnalités Clés
 
-3. Recherche Avancée (Multi-critères)
-- Filtres dynamiques : Tu as maintenant une barre de recherche capable de filtrer simultanément par :
-- Nom (via la clause ILIKE pour être insensible à la casse).
-- Note minimale (pour trouver les élèves en difficulté ou en réussite).
-- Âge (via une ComboBox).
-- Requête Dynamique : Le code Java construit intelligemment la requête SQL WHERE 1=1 AND ... selon ce que l'utilisateur remplit.
+### 📝 Gestion CRUD Complète
+* **Ajout, Modification et Suppression** d'étudiants (Prénom, Nom, Âge, Note).
+* **Interface interactive** avec mise à jour en temps réel de la liste.
 
-4. Gestion des Fichiers (Import/Export)
-- Import CSV : Capacité de charger massivement des élèves depuis un fichier externe via un BufferedReader.
-- Export CSV : Sauvegarde de la liste actuelle dans un format compatible Excel.
-- Rapport HTML/PDF : Génération d'un fichier HTML stylisé (avec tableau et couleurs) pour présenter les résultats, imprimable facilement en PDF.
+### 🔍 Recherche et Filtrage Avancés
+* Recherche dynamique par **nom** ou **prénom**.
+* Filtrage par **tranches d'âge** via un menu déroulant.
+* Bouton de réinitialisation rapide des filtres.
 
-5. Ergonomie & UI (JavaFX)
-- Interface organisée : Trois lignes de boutons bien distinctes (Gestion / Données / Rapports).
-- Tri natif : Les colonnes sont triables en un clic grâce à la configuration du PropertyValueFactory.
-- Sauvegarde Auto : Puisque tout est lié à PostgreSQL, chaque action est persistante immédiatement.
+### 📊 Analyses et Statistiques
+* Calcul automatique de la **moyenne générale** de la classe.
+* Suivi du nombre total d'étudiants inscrits.
+
+### 📥 Import / Export Multiformat
+* **CSV** : Pour une compatibilité Excel parfaite.
+* **JSON & XML** : Pour l'interopérabilité avec d'autres systèmes.
+* **HTML / PDF** : Génération de rapports visuels pour l'impression.
+
+### 🔐 Sécurité et Authentification
+* Système complet de **Login** et **Inscription**.
+* Validation des données et gestion des erreurs de connexion.
+
+---
+
+## 🛠️ Stack Technique
+
+* **Langage** : Java 21
+* **Interface Graphique** : JavaFX (FXML)
+* **Style** : CSS personnalisé pour un rendu moderne (UI/UX).
+* **Architecture** : Design Pattern **DAO** (Data Access Object) pour séparer la logique métier de la base de données.
+* **Gestion de dépendances** : Maven.
+
+---
+
+## 🎨 Aperçu de l'Interface
+
+L'application utilise un design en "Split Screen" pour l'authentification et un "Dashboard" avec barre latérale pour la gestion principale.
+
+* **Couleurs de l'UI** : Anthracite (`#2c3e50`), Orange (`#e67e22`) et Vert émeraude (`#27ae60`).
+* **Interactivité** : Animations au survol (Hover effects) gérées intégralement en CSS.
+
+---
+
+## ⚙️ Installation
+
+1.  Cloner le repository :
+    ```bash
+    git clone https://github.com/ton-pseudo/laplateforme_tracker.git
+    ```
+2.  Importer le projet dans votre IDE (IntelliJ, Eclipse ou VS Code).
+3.  Lancer la classe `mvn javafx:run`.
