@@ -15,9 +15,10 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.FileChooser;
 import model.Student;
+import service.ExportService;
 import util.UIUtils;
 
-import java.io.*;
+import java.io.File;
 import java.util.List;
 
 public class StudentController {
@@ -30,8 +31,9 @@ public class StudentController {
     @FXML private ComboBox<String> ageFilterCombo;
     @FXML private TextField searchFirstName, searchLastName;
 
-    private StudentDAO studentDAO = new StudentDAO();
-    private ObservableList<Student> masterData = FXCollections.observableArrayList();
+    private final StudentDAO studentDAO = new StudentDAO();
+    private final ExportService exportService = new ExportService();
+    private final ObservableList<Student> masterData = FXCollections.observableArrayList();
     
     private int currentPage = 0;
     private final int ROWS_PER_PAGE = 20;
@@ -45,43 +47,43 @@ public class StudentController {
         colAge.setCellValueFactory(new PropertyValueFactory<>("age"));
         colGrade.setCellValueFactory(new PropertyValueFactory<>("grade"));
 
-        // 2. ComboBox Âges
+        // 2. Initialisation ComboBox
         ObservableList<String> ages = FXCollections.observableArrayList("Tous");
         for (int i = 18; i <= 70; i++) { ages.add(String.valueOf(i)); }
         ageFilterCombo.setItems(ages);
         ageFilterCombo.setValue("Tous");
 
-        // 3. Charger les données initiales
+        // 3. Chargement initial
         refreshTable();
 
-        // 4. Filtrage dynamique
+        // 4. Système de filtrage
         FilteredList<Student> filteredData = new FilteredList<>(masterData, p -> true);
-        Runnable updateFilter = () -> {
-            filteredData.setPredicate(student -> {
-                String fNameFilter = searchFirstName.getText().toLowerCase().trim();
-                String lNameFilter = searchLastName.getText().toLowerCase().trim();
-                String ageFilter = ageFilterCombo.getValue();
+        
+        searchFirstName.textProperty().addListener((obs, old, val) -> applyFilters(filteredData));
+        searchLastName.textProperty().addListener((obs, old, val) -> applyFilters(filteredData));
+        ageFilterCombo.valueProperty().addListener((obs, old, val) -> applyFilters(filteredData));
 
-                if (!fNameFilter.isEmpty() && !student.getFirstName().toLowerCase().contains(fNameFilter)) return false;
-                if (!lNameFilter.isEmpty() && !student.getLastName().toLowerCase().contains(lNameFilter)) return false;
-                if (ageFilter != null && !ageFilter.equals("Tous")) {
-                    if (student.getAge() != Integer.parseInt(ageFilter)) return false;
-                }
-                return true;
-            });
-        };
-
-        searchFirstName.textProperty().addListener((obs, old, val) -> updateFilter.run());
-        searchLastName.textProperty().addListener((obs, old, val) -> updateFilter.run());
-        ageFilterCombo.valueProperty().addListener((obs, old, val) -> updateFilter.run());
-
-        // 5. Liaison TableView avec Tri
         SortedList<Student> sortedData = new SortedList<>(filteredData);
         sortedData.comparatorProperty().bind(studentTable.comparatorProperty());
         studentTable.setItems(sortedData);
 
-        // 6. Scroll Infini
+        // 5. Scroll Infini
         Platform.runLater(this::setupInfiniteScrolling);
+    }
+
+    private void applyFilters(FilteredList<Student> filteredData) {
+        filteredData.setPredicate(student -> {
+            String fNameFilter = searchFirstName.getText().toLowerCase().trim();
+            String lNameFilter = searchLastName.getText().toLowerCase().trim();
+            String ageFilter = ageFilterCombo.getValue();
+
+            if (!fNameFilter.isEmpty() && !student.getFirstName().toLowerCase().contains(fNameFilter)) return false;
+            if (!lNameFilter.isEmpty() && !student.getLastName().toLowerCase().contains(lNameFilter)) return false;
+            if (ageFilter != null && !ageFilter.equals("Tous")) {
+                if (student.getAge() != Integer.parseInt(ageFilter)) return false;
+            }
+            return true;
+        });
     }
 
     // --- LOGIQUE DE DONNÉES ---
@@ -165,97 +167,61 @@ public class StudentController {
         }
     }
 
-    // --- IMPORT / EXPORT (CSV, JSON, XML, PDF/HTML) ---
+    // --- ACTIONS EXPORT (Utilisant ExportService) ---
 
     @FXML
     private void handleExportCSV() {
         File file = getSaveLocation("export.csv", "CSV", "*.csv");
-        if (file == null) return;
-        try (PrintWriter pw = new PrintWriter(file)) {
-            pw.println("Prenom;Nom;Age;Note");
-            for (Student s : studentTable.getItems()) {
-                pw.println(s.getFirstName() + ";" + s.getLastName() + ";" + s.getAge() + ";" + s.getGrade());
-            }
+        if (file != null) {
+            exportService.exportToCSV(studentTable.getItems(), file.getAbsolutePath());
             showNotification("Succès", "Export CSV réussi.");
-        } catch (Exception e) { showError("Erreur", "Export CSV échoué."); }
+        }
     }
 
     @FXML
     private void handleImportCSV() {
         FileChooser fc = new FileChooser();
         File file = fc.showOpenDialog(studentTable.getScene().getWindow());
-        if (file == null) return;
-        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-            String line; br.readLine(); // Header
-            while ((line = br.readLine()) != null) {
-                String[] v = line.split(";");
-                studentDAO.addStudent(new Student(0, v[0], v[1], Integer.parseInt(v[2]), Double.parseDouble(v[3])));
-            }
+        if (file != null) {
+            exportService.importFromCSV(file.getAbsolutePath(), studentDAO);
             refreshTable();
             showNotification("Succès", "Importation terminée.");
-        } catch (Exception e) { showError("Erreur", "Fichier CSV corrompu."); }
+        }
     }
 
     @FXML
     private void handleExportJSON() {
         File file = getSaveLocation("etudiants.json", "JSON", "*.json");
-        if (file == null) return;
-        StringBuilder sb = new StringBuilder("[\n");
-        List<Student> list = studentTable.getItems();
-        for (int i = 0; i < list.size(); i++) {
-            Student s = list.get(i);
-            sb.append(String.format("  {\"prenom\":\"%s\", \"nom\":\"%s\", \"age\":%d, \"note\":%.2f}", 
-                      s.getFirstName(), s.getLastName(), s.getAge(), s.getGrade()));
-            if (i < list.size() - 1) sb.append(",");
-            sb.append("\n");
+        if (file != null) {
+            exportService.exportToJSON(studentTable.getItems(), file.getAbsolutePath());
+            showNotification("Succès", "Export JSON réussi.");
         }
-        sb.append("]");
-        saveStringToFile(sb.toString(), file);
     }
 
     @FXML
     private void handleExportXML() {
         File file = getSaveLocation("etudiants.xml", "XML", "*.xml");
-        if (file == null) return;
-        StringBuilder sb = new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<students>\n");
-        for (Student s : studentTable.getItems()) {
-            sb.append("  <student>\n")
-              .append("    <firstname>").append(s.getFirstName()).append("</firstname>\n")
-              .append("    <lastname>").append(s.getLastName()).append("</lastname>\n")
-              .append("    <age>").append(s.getAge()).append("</age>\n")
-              .append("    <grade>").append(s.getGrade()).append("</grade>\n")
-              .append("  </student>\n");
+        if (file != null) {
+            exportService.exportToXML(studentTable.getItems(), file.getAbsolutePath());
+            showNotification("Succès", "Export XML réussi.");
         }
-        sb.append("</students>");
-        saveStringToFile(sb.toString(), file);
     }
 
     @FXML
     private void handleExportHTML() {
         File file = new File("Rapport_Promotion.html");
-        try (PrintWriter pw = new PrintWriter(file)) {
-            pw.println("<html><head><style>table{width:100%; border-collapse:collapse;} th,td{border:1px solid #ddd; padding:8px;} th{background:#3d5afe; color:white;}</style></head><body>");
-            pw.println("<h1>Rapport Etudiants</h1>");
-            pw.println("<p>" + studentDAO.getGlobalStats().replace("\n", "<br>") + "</p>");
-            pw.println("<table><tr><th>Prénom</th><th>Nom</th><th>Age</th><th>Note</th></tr>");
-            for (Student s : studentTable.getItems()) {
-                pw.println(String.format("<tr><td>%s</td><td>%s</td><td>%d</td><td>%.2f</td></tr>", 
-                           s.getFirstName(), s.getLastName(), s.getAge(), s.getGrade()));
+        String stats = studentDAO.getGlobalStats();
+        exportService.exportToHTML(studentTable.getItems(), stats, file.getAbsolutePath());
+        
+        try {
+            if (java.awt.Desktop.isDesktopSupported()) {
+                java.awt.Desktop.getDesktop().browse(file.toURI());
             }
-            pw.println("</table></body></html>");
-            if (java.awt.Desktop.isDesktopSupported()) java.awt.Desktop.getDesktop().browse(file.toURI());
             showNotification("Rapport", "HTML généré et ouvert.");
-        } catch (Exception e) { showError("Erreur", "Rapport impossible."); }
+        } catch (Exception e) { showError("Erreur", "Ouverture du rapport impossible."); }
     }
 
     // --- UTILITAIRES ---
-
-    private void saveStringToFile(String content, File file) {
-        try (PrintWriter pw = new PrintWriter(file)) {
-            pw.write(content);
-            showNotification("Succès", "Fichier sauvegardé.");
-        } catch (Exception e) { showError("Erreur", "Écriture impossible."); }
-    }
 
     private File getSaveLocation(String defName, String desc, String ext) {
         FileChooser fc = new FileChooser();

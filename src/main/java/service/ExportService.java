@@ -4,43 +4,84 @@ import model.Student;
 import dao.StudentDAO;
 import java.io.*;
 import java.util.List;
+import java.util.Locale;
 
 public class ExportService {
-    
+
+    // --- CSV ---
     public void exportToCSV(List<Student> students, String filePath) {
+        // Utilisation de Locale.US pour forcer le point comme séparateur décimal dans le CSV
         try (PrintWriter writer = new PrintWriter(new File(filePath))) {
             writer.println("Prenom,Nom,Age,Note");
             for (Student s : students) {
-                writer.printf("%s,%s,%d,%.2f%n", s.getFirstName(), s.getLastName(), s.getAge(), s.getGrade());
+                writer.format(Locale.US, "%s,%s,%d,%.2f%n", 
+                    s.getFirstName(), s.getLastName(), s.getAge(), s.getGrade());
             }
         } catch (IOException e) { e.printStackTrace(); }
     }
 
-    // Ajout de la méthode d'importation manquante
     public void importFromCSV(String filePath, StudentDAO dao) {
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
             String line;
             br.readLine(); // Sauter l'en-tête
             while ((line = br.readLine()) != null) {
-                String[] data = line.split(",");
+                // On gère les fichiers qui pourraient utiliser des virgules ou points-virgules
+                String[] data = line.split("[,;]"); 
                 if (data.length >= 4) {
-                    Student s = new Student(0, data[0], data[1], Integer.parseInt(data[2]), Double.parseDouble(data[3]));
-                    dao.addStudent(s);
+                    String fName = data[0].trim();
+                    String lName = data[1].trim();
+                    int age = Integer.parseInt(data[2].trim());
+                    // Remplacement de la virgule par un point pour le parsing du Double
+                    double grade = Double.parseDouble(data[3].trim().replace(",", "."));
+                    
+                    dao.addStudent(new Student(0, fName, lName, age, grade));
                 }
             }
         } catch (Exception e) { e.printStackTrace(); }
     }
 
-    // On garde ton nom exportToHTML (plus court)
+    // --- JSON ---
+    public void exportToJSON(List<Student> students, String filePath) {
+        try (PrintWriter writer = new PrintWriter(new File(filePath))) {
+            writer.println("[");
+            for (int i = 0; i < students.size(); i++) {
+                Student s = students.get(i);
+                writer.format(Locale.US, "  { \"firstName\": \"%s\", \"lastName\": \"%s\", \"age\": %d, \"grade\": %.2f }%s%n",
+                        s.getFirstName(), s.getLastName(), s.getAge(), s.getGrade(),
+                        (i < students.size() - 1) ? "," : "");
+            }
+            writer.println("]");
+        } catch (IOException e) { e.printStackTrace(); }
+    }
+
+    // --- XML ---
+    public void exportToXML(List<Student> students, String filePath) {
+        try (PrintWriter writer = new PrintWriter(new File(filePath))) {
+            writer.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+            writer.println("<students>");
+            for (Student s : students) {
+                writer.println("  <student>");
+                writer.println("    <firstName>" + s.getFirstName() + "</firstName>");
+                writer.println("    <lastName>" + s.getLastName() + "</lastName>");
+                writer.println("    <age>" + s.getAge() + "</age>");
+                writer.println("    <grade>" + s.getGrade() + "</grade>");
+                writer.println("  </student>");
+            }
+            writer.println("</students>");
+        } catch (IOException e) { e.printStackTrace(); }
+    }
+
+    // --- HTML ---
     public void exportToHTML(List<Student> students, String stats, String filePath) {
         try (PrintWriter writer = new PrintWriter(new File(filePath))) {
-            writer.println("<html><head><style>body{font-family:sans-serif;} table{border-collapse:collapse;width:100%;} th,td{border:1px solid #ddd;padding:8px;} th{background-color:#e67e22;color:white;}</style></head><body>");
-            writer.println("<h1>Rapport LP Tracker</h1>");
-            writer.println("<table><tr><th>Nom</th><th>Prénom</th><th>Note</th></tr>");
+            writer.println("<html><head><meta charset='UTF-8'><style>body{font-family:sans-serif; padding:20px;} table{border-collapse:collapse;width:100%;} th,td{border:1px solid #ddd;padding:8px;text-align:left;} th{background-color:#2c3e50;color:white;}</style></head><body>");
+            writer.println("<h1>Rapport de Promotion - LP Tracker</h1>");
+            writer.println("<div style='background:#f9f9f9; padding:10px; border-radius:5px; margin-bottom:20px;'>" + stats.replace("\n", "<br>") + "</div>");
+            writer.println("<table><tr><th>Prénom</th><th>Nom</th><th>Âge</th><th>Note</th></tr>");
             for (Student s : students) {
-                writer.println("<tr><td>" + s.getLastName() + "</td><td>" + s.getFirstName() + "</td><td>" + s.getGrade() + "/20</td></tr>");
+                writer.println("<tr><td>" + s.getFirstName() + "</td><td>" + s.getLastName() + "</td><td>" + s.getAge() + "</td><td>" + s.getGrade() + "/20</td></tr>");
             }
-            writer.println("</table><p><b>" + stats + "</b></p></body></html>");
+            writer.println("</table></body></html>");
         } catch (IOException e) { e.printStackTrace(); }
     }
 }
