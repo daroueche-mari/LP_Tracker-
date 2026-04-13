@@ -1,3 +1,12 @@
+Il faut que vous ayez une base de données structuré comme ceci :
+- database_name : student_management
+- table : student
+id Int, first_name CHAR, last_name CHAR, age Int, grace NUM
+- table : users
+id Int, username CHAR, password CHAR, salt CHAR VAYING, avatar_url CHAR VARYING
+- Puis connecté vous avec le compte que vous créerez soit par l'appli ou manuellement par 
+une commande.
+
 # 🎓 LP Tracker - Système de Gestion d'Étudiants
 
 **LP Tracker** est une application de bureau moderne développée en **JavaFX**. Elle permet de gérer efficacement une base de données d'étudiants, d'analyser leurs performances et d'exporter les données sous divers formats professionnels.
