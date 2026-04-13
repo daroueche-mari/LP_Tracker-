@@ -21,4 +21,11 @@ public class User {
     public String getPasswordHash() { return passwordHash; }
     public String getSalt() { return salt; }
     public String getAvatarUrl() { return avatarUrl; }
+    public String getPassword() {
+        return passwordHash;
+    }
+
+    public void setPassword(String password) {
+        this.passwordHash = password;
+    }
 }
