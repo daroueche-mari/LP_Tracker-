@@ -5,6 +5,7 @@ C:\Users\dmari\Bureau\Cours JVSI\laplateforme_tracker\src\main\java\controller\S
 C:\Users\dmari\Bureau\Cours JVSI\laplateforme_tracker\src\main\java\Main.java
 C:\Users\dmari\Bureau\Cours JVSI\laplateforme_tracker\src\main\java\dao\UserDAO.java
 C:\Users\dmari\Bureau\Cours JVSI\laplateforme_tracker\src\main\java\util\PasswordUtils.java
+C:\Users\dmari\Bureau\Cours JVSI\laplateforme_tracker\src\main\java\exception\ValidationException.java
 C:\Users\dmari\Bureau\Cours JVSI\laplateforme_tracker\src\main\java\model\User.java
 C:\Users\dmari\Bureau\Cours JVSI\laplateforme_tracker\src\main\java\service\StudentService.java
 C:\Users\dmari\Bureau\Cours JVSI\laplateforme_tracker\src\main\java\dao\DatabaseConnection.java

@@ -9,7 +9,7 @@ import java.util.Locale;
 public class ExportService {
 
     // --- CSV ---
-    public void exportToCSV(List<Student> students, String filePath) {
+    public void exportToCSV(List<Student> students, String filePath) { // Méthode pour exporter la liste des étudiants dans un fichier CSV (ex: pour partager les données de la promotion dans un format simple et largement compatible avec d'autres outils comme Excel ou Google Sheets)
         // Utilisation de Locale.US pour forcer le point comme séparateur décimal dans le CSV
         try (PrintWriter writer = new PrintWriter(new File(filePath))) {
             writer.println("Prenom,Nom,Age,Note");
@@ -20,7 +20,7 @@ public class ExportService {
         } catch (IOException e) { e.printStackTrace(); }
     }
 
-    public void importFromCSV(String filePath, StudentDAO dao) {
+    public void importFromCSV(String filePath, StudentDAO dao) { // Méthode pour importer des étudiants depuis un fichier CSV (ex: pour ajouter rapidement une liste d'étudiants à la promotion sans passer par l'interface de saisie)
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
             String line;
             br.readLine(); // Sauter l'en-tête
@@ -41,7 +41,7 @@ public class ExportService {
     }
 
     // --- JSON ---
-    public void exportToJSON(List<Student> students, String filePath) {
+    public void exportToJSON(List<Student> students, String filePath) { // Méthode pour exporter la liste des étudiants dans un fichier JSON (ex: pour partager les données de la promotion dans un format moderne et facilement intégrable avec d'autres systèmes ou applications)
         try (PrintWriter writer = new PrintWriter(new File(filePath))) {
             writer.println("[");
             for (int i = 0; i < students.size(); i++) {
@@ -55,7 +55,7 @@ public class ExportService {
     }
 
     // --- XML ---
-    public void exportToXML(List<Student> students, String filePath) {
+    public void exportToXML(List<Student> students, String filePath) { // Méthode pour exporter la liste des étudiants dans un fichier XML (ex: pour partager les données de la promotion dans un format structuré ou pour une intégration avec d'autres systèmes qui utilisent XML)
         try (PrintWriter writer = new PrintWriter(new File(filePath))) {
             writer.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
             writer.println("<students>");
@@ -72,7 +72,7 @@ public class ExportService {
     }
 
     // --- HTML ---
-    public void exportToHTML(List<Student> students, String stats, String filePath) {
+    public void exportToHTML(List<Student> students, String stats, String filePath) { // Méthode pour exporter la liste des étudiants et les statistiques de la promotion dans un fichier HTML (ex: pour générer un rapport visuel de la promotion à partager ou à imprimer)
         try (PrintWriter writer = new PrintWriter(new File(filePath))) {
             writer.println("<html><head><meta charset='UTF-8'><style>body{font-family:sans-serif; padding:20px;} table{border-collapse:collapse;width:100%;} th,td{border:1px solid #ddd;padding:8px;text-align:left;} th{background-color:#2c3e50;color:white;}</style></head><body>");
             writer.println("<h1>Rapport de Promotion - LP Tracker</h1>");

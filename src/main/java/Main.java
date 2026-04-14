@@ -7,7 +7,7 @@ import javafx.stage.Stage;
 public class Main extends Application {
 
     @Override
-    public void start(Stage primaryStage) {
+    public void start(Stage primaryStage) { // Point d'entrée de l'application, appelé automatiquement par JavaFX après le lancement de la classe Main
         try {
             // 1. On charge l'écran de bienvenue (WelcomeView)
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/WelcomeView.fxml"));
@@ -33,7 +33,7 @@ public class Main extends Application {
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) { // Méthode principale qui lance l'application JavaFX (ex: lorsque l'utilisateur double-clique sur le JAR ou exécute la classe Main pour démarrer l'application)
         launch(args);
     }
 }

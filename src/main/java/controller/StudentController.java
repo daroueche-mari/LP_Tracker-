@@ -1,6 +1,7 @@
 package controller;
 
 import dao.StudentDAO;
+import exception.ValidationException;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -16,47 +17,49 @@ import javafx.scene.input.MouseEvent;
 import javafx.stage.FileChooser;
 import model.Student;
 import service.ExportService;
+import service.StudentService;
 import util.UIUtils;
 
 import java.io.File;
 import java.util.List;
 
 public class StudentController {
-
-    @FXML private TextField fNameInput, lNameInput, ageInput, gradeInput;
+    // --- UI Components ---
+    @FXML private TextField fNameInput, lNameInput, ageInput, gradeInput; 
     @FXML private TableView<Student> studentTable;
     @FXML private TableColumn<Student, String> colFirstName, colLastName;
     @FXML private TableColumn<Student, Integer> colAge;
     @FXML private TableColumn<Student, Double> colGrade;
     @FXML private ComboBox<String> ageFilterCombo;
     @FXML private TextField searchFirstName, searchLastName;
+    @FXML private Label statsLabel; // Optionnel : pour afficher la moyenne en direct
 
+    // --- Services ---
     private final StudentDAO studentDAO = new StudentDAO();
     private final ExportService exportService = new ExportService();
+    private final StudentService studentService = new StudentService();
     private final ObservableList<Student> masterData = FXCollections.observableArrayList();
-    
+
     private int currentPage = 0;
     private final int ROWS_PER_PAGE = 20;
     private boolean isLoading = false;
 
     @FXML
     public void initialize() {
-        // 1. Liaison des colonnes
+        // 1. Liaison colonnes
         colFirstName.setCellValueFactory(new PropertyValueFactory<>("firstName"));
         colLastName.setCellValueFactory(new PropertyValueFactory<>("lastName"));
         colAge.setCellValueFactory(new PropertyValueFactory<>("age"));
         colGrade.setCellValueFactory(new PropertyValueFactory<>("grade"));
 
-        // 2. Initialisation ComboBox
+        // 2. ComboBox Âge
         ObservableList<String> ages = FXCollections.observableArrayList("Tous");
         for (int i = 18; i <= 70; i++) { ages.add(String.valueOf(i)); }
         ageFilterCombo.setItems(ages);
         ageFilterCombo.setValue("Tous");
 
-        // 3. Chargement initial
+        // 3. Données et Filtres
         refreshTable();
-
-        // 4. Système de filtrage
         FilteredList<Student> filteredData = new FilteredList<>(masterData, p -> true);
         
         searchFirstName.textProperty().addListener((obs, old, val) -> applyFilters(filteredData));
@@ -67,7 +70,6 @@ public class StudentController {
         sortedData.comparatorProperty().bind(studentTable.comparatorProperty());
         studentTable.setItems(sortedData);
 
-        // 5. Scroll Infini
         Platform.runLater(this::setupInfiniteScrolling);
     }
 
@@ -84,56 +86,29 @@ public class StudentController {
             }
             return true;
         });
+        updateLiveStats(); // Mise à jour auto de la moyenne quand on filtre
     }
-
-    // --- LOGIQUE DE DONNÉES ---
 
     private void refreshTable() {
         currentPage = 0;
-        List<Student> data = studentDAO.getStudentsPaged(currentPage, ROWS_PER_PAGE);
-        masterData.setAll(data);
+        masterData.setAll(studentDAO.getStudentsPaged(currentPage, ROWS_PER_PAGE));
+        updateLiveStats();
     }
 
-    private void setupInfiniteScrolling() {
-        for (Node node : studentTable.lookupAll(".scroll-bar")) {
-            if (node instanceof ScrollBar scrollBar && scrollBar.getOrientation() == Orientation.VERTICAL) {
-                scrollBar.valueProperty().addListener((obs, oldVal, newVal) -> {
-                    if (newVal.doubleValue() > (scrollBar.getMax() * 0.9) && !isLoading) {
-                        loadNextPage();
-                    }
-                });
-            }
-        }
-    }
-
-    private void loadNextPage() {
-        isLoading = true;
-        currentPage++;
-        List<Student> nextStudents = studentDAO.getStudentsPaged(currentPage, ROWS_PER_PAGE);
-        if (nextStudents != null && !nextStudents.isEmpty()) {
-            masterData.addAll(nextStudents);
-        }
-        isLoading = false;
-    }
-
-    // --- ACTIONS CRUD ---
+    // --- ACTIONS CRUD (Nettoyées grâce au Service) ---
 
     @FXML
     private void handleAddStudent() {
         try {
-            String fName = fNameInput.getText().trim();
-            String lName = lNameInput.getText().trim();
-            int age = Integer.parseInt(ageInput.getText());
-            double grade = Double.parseDouble(gradeInput.getText());
-
-            if (fName.isEmpty() || lName.isEmpty()) throw new Exception();
-
-            studentDAO.addStudent(new Student(0, fName, lName, age, grade));
-            showNotification("Succès", "Étudiant ajouté !");
+            studentService.validateAndAdd(
+                fNameInput.getText(), lNameInput.getText(), 
+                ageInput.getText(), gradeInput.getText()
+            );
+            showNotification("Succès", "Étudiant ajouté avec succès !");
             refreshTable();
             handleResetFilters();
-        } catch (Exception e) {
-            showError("Erreur", "Vérifiez les champs (Âge: entier, Note: 0-20).");
+        } catch (ValidationException e) {
+            showError("Erreur de saisie", e.getMessage());
         }
     }
 
@@ -141,42 +116,54 @@ public class StudentController {
     private void handleUpdateStudent() {
         Student selected = studentTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
-            showError("Sélection", "Veuillez sélectionner un étudiant.");
+            showError("Sélection", "Veuillez sélectionner un étudiant dans la liste.");
             return;
         }
         try {
-            selected.setFirstName(fNameInput.getText());
-            selected.setLastName(lNameInput.getText());
-            selected.setAge(Integer.parseInt(ageInput.getText()));
-            selected.setGrade(Double.parseDouble(gradeInput.getText()));
-
-            studentDAO.updateStudent(selected);
+            studentService.validateAndUpdate(
+                selected, 
+                fNameInput.getText(), lNameInput.getText(), 
+                ageInput.getText(), gradeInput.getText()
+            );
             showNotification("Succès", "Données mises à jour.");
             refreshTable();
-        } catch (Exception e) { showError("Erreur", "Données invalides."); }
+        } catch (ValidationException e) {
+            showError("Erreur", e.getMessage());
+        }
     }
 
     @FXML
     private void handleDeleteStudent() {
         Student selected = studentTable.getSelectionModel().getSelectedItem();
         if (selected != null) {
-            studentDAO.deleteStudent(selected.getId());
+            studentService.deleteStudent(selected.getId());
             showNotification("Suppression", "Étudiant retiré.");
             refreshTable();
-            handleResetFilters();
         }
     }
 
-    // --- ACTIONS EXPORT (Utilisant ExportService) ---
+    // --- EXPORTS & STATS ---
+
+    private void updateLiveStats() {
+        if (statsLabel != null) {
+            statsLabel.setText(studentService.getFormattedStatsForSelection(studentTable.getItems()));
+        }
+    }
 
     @FXML
-    private void handleExportCSV() {
-        File file = getSaveLocation("export.csv", "CSV", "*.csv");
-        if (file != null) {
-            exportService.exportToCSV(studentTable.getItems(), file.getAbsolutePath());
-            showNotification("Succès", "Export CSV réussi.");
-        }
+    private void handleExportHTML() {
+        File file = new File("Rapport_Promotion.html");
+        String stats = studentService.getGlobalStatsString();
+        exportService.exportToHTML(studentTable.getItems(), stats, file.getAbsolutePath());
+        
+        try {
+            if (java.awt.Desktop.isDesktopSupported()) {
+                java.awt.Desktop.getDesktop().browse(file.toURI());
+            }
+        } catch (Exception e) { showError("Erreur", "Impossible d'ouvrir le rapport."); }
     }
+
+    // --- LOGIQUE SCROLL & UI UTILS (Inchangé) ---
 
     @FXML
     private void handleImportCSV() {
@@ -185,43 +172,27 @@ public class StudentController {
         if (file != null) {
             exportService.importFromCSV(file.getAbsolutePath(), studentDAO);
             refreshTable();
-            showNotification("Succès", "Importation terminée.");
         }
     }
 
     @FXML
-    private void handleExportJSON() {
-        File file = getSaveLocation("etudiants.json", "JSON", "*.json");
+    private void handleExportCSV() { exportToFile("export.csv", "CSV", "*.csv", "csv"); }
+    @FXML
+    private void handleExportJSON() { exportToFile("etudiants.json", "JSON", "*.json", "json"); }
+    @FXML
+    private void handleExportXML() { exportToFile("etudiants.xml", "XML", "*.xml", "xml"); }
+
+    private void exportToFile(String defName, String desc, String ext, String type) {
+        File file = getSaveLocation(defName, desc, ext);
         if (file != null) {
-            exportService.exportToJSON(studentTable.getItems(), file.getAbsolutePath());
-            showNotification("Succès", "Export JSON réussi.");
-        }
-    }
-
-    @FXML
-    private void handleExportXML() {
-        File file = getSaveLocation("etudiants.xml", "XML", "*.xml");
-        if (file != null) {
-            exportService.exportToXML(studentTable.getItems(), file.getAbsolutePath());
-            showNotification("Succès", "Export XML réussi.");
-        }
-    }
-
-    @FXML
-    private void handleExportHTML() {
-        File file = new File("Rapport_Promotion.html");
-        String stats = studentDAO.getGlobalStats();
-        exportService.exportToHTML(studentTable.getItems(), stats, file.getAbsolutePath());
-        
-        try {
-            if (java.awt.Desktop.isDesktopSupported()) {
-                java.awt.Desktop.getDesktop().browse(file.toURI());
+            switch(type) {
+                case "csv" -> exportService.exportToCSV(studentTable.getItems(), file.getAbsolutePath());
+                case "json" -> exportService.exportToJSON(studentTable.getItems(), file.getAbsolutePath());
+                case "xml" -> exportService.exportToXML(studentTable.getItems(), file.getAbsolutePath());
             }
-            showNotification("Rapport", "HTML généré et ouvert.");
-        } catch (Exception e) { showError("Erreur", "Ouverture du rapport impossible."); }
+            showNotification("Export", "Fichier " + type.toUpperCase() + " généré !");
+        }
     }
-
-    // --- UTILITAIRES ---
 
     private File getSaveLocation(String defName, String desc, String ext) {
         FileChooser fc = new FileChooser();
@@ -237,7 +208,7 @@ public class StudentController {
 
     private void showError(String title, String content) {
         Alert a = new Alert(Alert.AlertType.ERROR);
-        a.setTitle(title); a.setContentText(content); a.showAndWait();
+        a.setTitle(title); a.setHeaderText(null); a.setContentText(content); a.showAndWait();
     }
 
     @FXML
@@ -263,5 +234,25 @@ public class StudentController {
             ageInput.setText(String.valueOf(s.getAge()));
             gradeInput.setText(String.valueOf(s.getGrade()));
         }
+    }
+
+    private void setupInfiniteScrolling() {
+        for (Node node : studentTable.lookupAll(".scroll-bar")) {
+            if (node instanceof ScrollBar scrollBar && scrollBar.getOrientation() == Orientation.VERTICAL) {
+                scrollBar.valueProperty().addListener((obs, oldVal, newVal) -> {
+                    if (newVal.doubleValue() > (scrollBar.getMax() * 0.9) && !isLoading) {
+                        loadNextPage();
+                    }
+                });
+            }
+        }
+    }
+
+    private void loadNextPage() {
+        isLoading = true;
+        currentPage++;
+        List<Student> nextStudents = studentDAO.getStudentsPaged(currentPage, ROWS_PER_PAGE);
+        if (nextStudents != null && !nextStudents.isEmpty()) masterData.addAll(nextStudents);
+        isLoading = false;
     }
 }

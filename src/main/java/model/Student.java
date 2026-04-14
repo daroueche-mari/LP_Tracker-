@@ -44,7 +44,7 @@ public class Student {
 
     // Pour afficher l'étudiant facilement dans la console
     @Override
-    public String toString() {
+    public String toString() { 
         return "Student [id=" + id + ", name=" + firstName + " " + lastName + ", age=" + age + ", grade=" + grade + "]";
     }
 }
