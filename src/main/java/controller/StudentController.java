@@ -91,8 +91,10 @@ public class StudentController {
     // Méthode pour rafraîchir la TableView avec les données de la base de données, en réinitialisant la pagination et en mettant à jour les statistiques affichées (ex: après une opération de création, mise à jour ou suppression d'un étudiant, ou après l'importation de données)
     private void refreshTable() {
         currentPage = 0;
-        masterData.setAll(studentDAO.getStudentsPaged(currentPage, ROWS_PER_PAGE));
+        // Teste avec une limite beaucoup plus grande, genre 100
+        masterData.setAll(studentDAO.getStudentsPaged(currentPage, 100)); 
         updateLiveStats();
+        studentTable.requestLayout();
     }
 
     // --- ACTIONS CRUD (Nettoyées grâce au Service) ---
@@ -165,15 +167,24 @@ public class StudentController {
 
     // --- LOGIQUE SCROLL & UI UTILS (Inchangé) ---
     // Méthode pour gérer l'importation d'étudiants depuis un fichier CSV, en utilisant le Service d'exportation pour lire le fichier et ajouter les étudiants à la base de données (ex: lorsque l'utilisateur clique sur "Importer CSV", cette méthode est appelée pour permettre d'ajouter rapidement une liste d'étudiants à la promotion sans passer par l'interface de saisie)
-    @FXML
+   @FXML
     private void handleImportCSV() {
         FileChooser fc = new FileChooser();
+        fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Fichiers CSV", "*.csv"));
         File file = fc.showOpenDialog(studentTable.getScene().getWindow());
+        // Si un fichier est sélectionné, on appelle la méthode d'importation du Service en passant le chemin du fichier et le DAO pour ajouter les étudiants à la base de données, puis on rafraîchit la TableView pour afficher les nouveaux étudiants et on affiche une notification de succès (ex: pour permettre à l'utilisateur d'ajouter rapidement une liste d'étudiants à la promotion sans passer par l'interface de saisie)
         if (file != null) {
-            exportService.importFromCSV(file.getAbsolutePath(), studentDAO);
-            refreshTable();
+            try {
+                exportService.importFromCSV(file.getAbsolutePath(), studentDAO);
+                refreshTable();
+                // Utilisation de ta méthode utilitaire
+                showNotification("Import réussi", "Les données ont été intégrées avec succès !");
+            } catch (Exception e) {
+                // Utilisation de ta méthode d'erreur
+                showError("Échec de l'import", "Erreur technique : " + e.getMessage());
+            }
         }
-    }
+}
 
     @FXML // Méthodes pour gérer l'exportation de la liste des étudiants dans différents formats (CSV, JSON, XML), en utilisant le Service d'exportation pour générer les fichiers correspondants (ex: lorsque l'utilisateur clique sur "Exporter en CSV", "Exporter en JSON" ou "Exporter en XML", ces méthodes sont appelées pour créer les fichiers dans le format choisi)
     private void handleExportCSV() { exportToFile("export.csv", "CSV", "*.csv", "csv"); }
