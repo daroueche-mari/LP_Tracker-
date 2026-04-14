@@ -1,5 +1,5 @@
 package dao;
-
+// Importations des classes nécessaires pour le fonctionnement du DAO (ex: pour gérer les connexions à la base de données, manipuler les résultats des requêtes SQL, etc.)
 import model.User;
 import java.sql.*;
 import java.util.ArrayList;

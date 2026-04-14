@@ -1,5 +1,5 @@
 package service;
-
+// Importations des classes nécessaires pour le fonctionnement du service d'exportation (ex: pour manipuler les modèles d'étudiant, interagir avec le DAO pour récupérer les données à exporter, gérer les opérations de lecture/écriture de fichiers, etc.)
 import model.Student;
 import dao.StudentDAO;
 import java.io.*;

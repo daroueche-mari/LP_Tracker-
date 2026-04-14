@@ -1,5 +1,5 @@
 package util;
-
+// Importations des classes nécessaires pour le fonctionnement de la classe utilitaire de gestion de l'interface utilisateur (ex: pour afficher des alertes, changer de scène, gérer les sélections de fichiers, etc.)
 import javafx.animation.FadeTransition;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXMLLoader;
@@ -43,44 +43,38 @@ public class UIUtils {
     try {
         // 1. Vérification du chemin
         java.net.URL resource = UIUtils.class.getResource("/view/" + fxmlFile);
-        
+        // 2. Si le fichier est introuvable, on affiche une erreur claire au lieu de crasher avec un NullPointerException
         if (resource == null) {
             System.err.println("❌ ERREUR CRITIQUE : Le fichier FXML est introuvable !");
             System.err.println("   Chemin tenté : /view/" + fxmlFile);
             System.err.println("   Vérifiez l'orthographe et les majuscules dans le dossier resources/view/");
             return; // On arrête avant le crash
         }
-
+        // 3. Chargement de la nouvelle scène
         Parent root = FXMLLoader.load(resource);
-        
-        // 2. Préparer l'opacité pour le fondu
+        // 4. Effet de transition (optionnel mais sympa pour l'expérience utilisateur)
         root.setOpacity(0);
-        
-        // 3. Configurer la scène et le stage
+        // 5. Configuration de la scène et de la fenêtre
         Scene scene = new Scene(root);
         stage.setScene(scene);
         stage.setTitle(title);
         stage.setResizable(true);
-        
-        // 4. Ajuster la taille et centrer
+        // 6. Ajustement de la taille et centrage
         stage.sizeToScene(); 
         stage.centerOnScreen();
-
-        // 5. Afficher la fenêtre
+        // 7. Affichage de la fenêtre
         stage.show();
-
-        // 6. Lancer l'animation
+        // 8. Animation de fondu pour une transition plus fluide
         FadeTransition ft = new FadeTransition(Duration.millis(800), root);
         ft.setFromValue(0.0);
         ft.setToValue(1.0);
         ft.play();
-
+        // 9. Log de succès
     } catch (IOException e) {
         System.err.println("❌ Erreur de lecture du fichier FXML : " + e.getMessage());
         e.printStackTrace();
     }
 }
-
     // 4. Sélection de fichier (Import)
     public static String openFileChooser(Window window, String title, String description) {
         FileChooser fileChooser = new FileChooser();

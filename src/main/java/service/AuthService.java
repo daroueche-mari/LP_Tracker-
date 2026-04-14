@@ -1,5 +1,5 @@
 package service;
-
+// Importations des classes nécessaires pour le fonctionnement du service d'authentification (ex: pour interagir avec le DAO, manipuler les modèles d'utilisateur, gérer les exceptions liées à l'authentification, etc.)
 import dao.UserDAO;
 import model.User;
 import util.PasswordUtils;
@@ -64,7 +64,7 @@ public class AuthService {
 
     // 4. Enregistrement en base via le DAO
     boolean success = userDAO.saveUser(username, hash, salt, "default_avatar.png");
-    
+    // 5. Si l'enregistrement échoue, on lance une exception
     if (!success) {
         throw new AuthException("Erreur lors de la création du compte.");
     }

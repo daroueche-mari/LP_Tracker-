@@ -8,7 +8,7 @@ public class DatabaseConnection {
     private static final String URL = "jdbc:postgresql://localhost:5432/student_management";
     private static final String USER = "postgres";
     private static final String PASSWORD = "root";
-
+    
     public static Connection getConnection() throws SQLException { // Méthode pour obtenir une connexion à la base de données PostgreSQL
         try {
             // Force le chargement du driver PostgreSQL

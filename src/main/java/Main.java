@@ -1,9 +1,10 @@
+// Importations des classes nécessaires pour le fonctionnement de la classe principale de l'application JavaFX (ex: pour lancer l'application, charger les scènes, etc.)
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-
+// Importations des classes nécessaires pour le fonctionnement de la classe principale de l'application JavaFX (ex: pour lancer l'application, charger les scènes, etc.)
 public class Main extends Application {
 
     @Override
@@ -19,14 +20,13 @@ public class Main extends Application {
             // 3. Configuration de la fenêtre
             primaryStage.setTitle("Bienvenue - LP Tracker");
             primaryStage.setScene(scene);
-            
-            // On peut autoriser le redimensionnement ou pas selon tes goûts
+            // 4. Ajustement de la taille et centrage            
             primaryStage.setResizable(true); 
             primaryStage.centerOnScreen(); // Pour qu'elle apparaisse au milieu
             primaryStage.show();
-
+            // 5. Log de succès
             System.out.println("🚀 Application lancée sur l'écran d'accueil.");
-
+            // Note : Le WelcomeController va gérer les interactions sur cet écran (ex: lorsque l'utilisateur clique sur "Se connecter" ou "S'inscrire", le WelcomeController va valider les données et appeler le service d'authentification, puis changer de scène pour accéder à l'application principale si la connexion est réussie)
         } catch (Exception e) {
             System.err.println("❌ Erreur au démarrage : " + e.getMessage());
             e.printStackTrace();

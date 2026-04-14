@@ -1,4 +1,5 @@
 package model;
+// Classe modèle représentant un étudiant, avec des propriétés privées et des getters/setters publics pour accéder à ces propriétés (ex: pour stocker les informations d'un étudiant récupérées de la base de données ou pour créer un nouvel étudiant à partir des données saisies dans l'interface utilisateur)
 public class Student {
     private int id;
     private String firstName;

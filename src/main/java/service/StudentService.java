@@ -1,5 +1,5 @@
 package service;
-
+// Importations des classes nécessaires pour le fonctionnement du service de gestion des étudiants (ex: pour interagir avec le DAO, manipuler les modèles d'étudiant, gérer les exceptions liées à la validation des données, etc.)
 import dao.StudentDAO;
 import exception.ValidationException;
 import model.Student;
@@ -77,14 +77,14 @@ public class StudentService {
         try {
             int age = Integer.parseInt(a.trim());
             double grade = Double.parseDouble(g.trim().replace(",", "."));
-            
+            // Règles métier strictes
             if (age < 18 || grade < 0 || grade > 20) throw new Exception();
-
+            // Si tout est OK, on met à jour l'étudiant sélectionné
             selected.setFirstName(f.trim());
             selected.setLastName(l.trim());
             selected.setAge(age);
             selected.setGrade(grade);
-
+            // Appel au DAO pour mettre à jour
             studentDAO.updateStudent(selected);
         } catch (Exception e) {
             throw new ValidationException("Mise à jour échouée : vérifiez les valeurs saisies.");
