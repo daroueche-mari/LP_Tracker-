@@ -1,0 +1,122 @@
+/* --- BOUTONS SIDEBAR (Dashboard) --- */
+.sidebar-button {
+    background-color: transparent;
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-alignment: CENTER_LEFT;
+    cursor: hand;
+    -fx-cursor: hand;
+    font-size: 13px;
+    -fx-font-size: 13px;
+    padding: 10 15 10 15;
+    -fx-padding: 10 15 10 15;
+}
+
+.sidebar-button:hover {
+    background-color: #3d5afe; /* Le bleu de survol */
+    -fx-background-color: #3d5afe; /* Le bleu de survol */
+    -fx-text-fill: white;
+}
+
+/* --- BOUTON DECONNEXION --- */
+.btn-logout {
+    background-color: #c0392b;
+    -fx-background-color: #c0392b;
+    -fx-text-fill: white;
+    font-weight: bold;
+    -fx-font-weight: bold;
+    cursor:hand;
+    -fx-cursor: hand;
+}
+
+.btn-logout:hover {
+    background-color: #e74c3c;
+    -fx-background-color: #e74c3c;
+}
+
+/* --- BOUTONS CRUD --- */
+.btn-add {
+     background-color: #27ae60; 
+     -fx-background-color: #27ae60; 
+     -fx-text-fill: white; 
+     font-weight: bold;
+     -fx-font-weight: bold;
+     cursor:hand;
+     -fx-cursor: hand; 
+}
+.btn-add:hover { 
+    background-color: #2ecc71; 
+    -fx-background-color: #2ecc71; 
+    -fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
+}
+
+.btn-update {
+    background-color: #3498db;
+    -fx-background-color: #3498db;
+    fill:white;
+    -fx-text-fill: white;
+    cursor:hand;
+    -fx-cursor: hand;
+}
+.btn-update:hover {
+    background-color: #2980b9;
+    -fx-background-color: #2980b9;
+}
+
+.btn-delete { 
+    background-color: #e74c3c; 
+    -fx-background-color: #e74c3c; 
+    fill:white;
+    -fx-text-fill: white; 
+    cursor:hand;
+    -fx-cursor: hand; 
+}
+.btn-delete:hover {
+    background-color: #c0392b; 
+    -fx-background-color: #c0392b; 
+}
+
+/* --- BOUTONS BIENVENUE & AUTH --- */
+.btn-welcome {
+    background-color: white;
+    -fx-background-color: white;
+    fill: #e67e22;
+    -fx-text-fill: #e67e22;
+    -fx-background-radius: 25;
+    font-weight: bold;
+    -fx-font-weight: bold;
+    cursor: hand;
+    -fx-cursor: hand;
+}
+
+.btn-welcome:hover {
+    background-color: #f3f3f3;
+    -fx-background-color: #f3f3f3;
+    -fx-scale-x: 1.03;
+}
+
+.btn-outline {
+    background-color: transparent;
+    -fx-background-color: transparent;
+    border-color: white;
+    -fx-border-color: white;
+    border-radius: 25;
+    -fx-border-radius: 25;
+    fill: white;
+    -fx-text-fill: white;
+    cursor:hand;
+    -fx-cursor: hand;
+}
+
+.btn-outline:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    -fx-background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* --- CHAMPS DE SAISIE --- */
+.text-field {
+    -fx-background-radius: 5;
+    padding: 8;
+    -fx-padding: 8;
+}
