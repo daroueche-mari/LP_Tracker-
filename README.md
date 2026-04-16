@@ -54,7 +54,7 @@ Gère les comptes utilisateurs de l'application.
 
 ## 🛠️ Stack Technique
 
-* **Interface** : JavaFX 21 (MVC Pattern)
+* **Interface** : JavaFX 25 (MVC Pattern)
 * **Design** : CSS personnalisé (Thème "Moderne Connecté") & Scene Builder
 * **Base de données** : PostgreSQL
 * **Gestionnaire de dépendances** : Maven
