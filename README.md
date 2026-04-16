@@ -1,4 +1,4 @@
-- Pour le lancement sans IDE, dans le dossier target: laplateforme_tracker-1.0-SNAPSHOT.jar 
+- Pour le lancement sans IDE, dans le dossier target : laplateforme_tracker-1.0-SNAPSHOT.jar 
 - Database.sql contient les commandes nécessaires pour la creation de la base de donnée.
 
 ***
