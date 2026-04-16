@@ -5,9 +5,12 @@ import java.sql.SQLException;
 
 public class DatabaseConnection { 
     // --- Configuration de la connexion à la base de données ---
-    private static final String URL = "jdbc:postgresql://localhost:5432/student_management";
-    private static final String USER = "postgres";
-    private static final String PASSWORD = "root";
+    // private static final String URL = "jdbc:postgresql://localhost:5432/student_management";
+    // private static final String USER = "postgres";
+    // private static final String PASSWORD = "root";
+    private static final String URL = "jdbc:postgresql://aws-0-eu-west-1.pooler.supabase.com:5432/postgres";
+    private static final String USER = "postgres.stutavnnugpdbljdwidq"; 
+    private static final String PASSWORD = "Azertyuiop@+13011"; // Celui que tu as défini sur Supabase
     
     public static Connection getConnection() throws SQLException { // Méthode pour obtenir une connexion à la base de données PostgreSQL
         try {

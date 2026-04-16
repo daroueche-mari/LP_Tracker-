@@ -28,7 +28,7 @@ public class WelcomeController { // Contrôleur pour la page de bienvenue (conne
         String password = loginPassField.getText();
         // Validation de base : champs non vides
         if (username.isEmpty() || password.isEmpty()) {
-            System.out.println("❌ Erreur : Veuillez remplir tous les champs.");
+            showAlert(javafx.scene.control.Alert.AlertType.WARNING, "Erreur de saisie", "Veuillez remplir tous les champs.");
             return;
         }
 
@@ -37,12 +37,12 @@ public class WelcomeController { // Contrôleur pour la page de bienvenue (conne
             // puis comparer les hash avec Sel + Poivre.
             authService.login(username, password);
             // Si tout est OK, on affiche un message de succès et on change de scène pour accéder à l'application principale
-            System.out.println("✅ Connexion réussie !");
+            showAlert(javafx.scene.control.Alert.AlertType.INFORMATION, "Succès", "Connexion réussie !");
             UIUtils.switchScene(event, "MainView.fxml", "LP Tracker - Gestion des Étudiants");
             // Note : Après une connexion réussie, on pourrait aussi stocker l'utilisateur connecté dans une session ou un contexte global pour l'utiliser dans les autres parties de l'application (ex: afficher le nom de l'utilisateur dans la barre de navigation, personnaliser l'expérience utilisateur, etc.)
         } catch (exception.AuthException e) {
             // Le message viendra de ton AuthService (ex: "Mot de passe incorrect")
-            System.out.println("❌ " + e.getMessage());
+            showAlert(javafx.scene.control.Alert.AlertType.ERROR, "Erreur", "Erreur lors de la connexion : " + e.getMessage());
         }
     }
     // Méthode pour gérer l'inscription d'un nouvel utilisateur, en récupérant les valeurs des champs d'inscription, en validant qu'ils ne sont pas vides et que les mots de passe correspondent, puis en appelant le service d'authentification pour tenter de créer un nouvel utilisateur (ex: lorsque l'utilisateur remplit le formulaire d'inscription et clique sur "S'inscrire", cette méthode est appelée pour valider les données et créer le compte)
@@ -53,7 +53,7 @@ public class WelcomeController { // Contrôleur pour la page de bienvenue (conne
         String confirm = regConfirmField.getText();
         // Validation de base : champs non vides et mots de passe correspondants
         if (!password.equals(confirm)) {
-            System.out.println("❌ Erreur : Les mots de passe ne correspondent pas.");
+            showAlert(javafx.scene.control.Alert.AlertType.WARNING, "Erreur de saisie", "Les mots de passe ne correspondent pas.");
             return;
         }
 
@@ -65,13 +65,14 @@ public class WelcomeController { // Contrôleur pour la page de bienvenue (conne
             // 4. Appeler userDAO.saveUser
             authService.register(username, password);
             // Si tout est OK, on affiche un message de succès et on réinitialise les champs d'inscription
-            System.out.println("✅ Inscription réussie !");
+            showAlert(javafx.scene.control.Alert.AlertType.INFORMATION, "Succès", "Inscription réussie ! Vous pouvez maintenant vous connecter.");
             regUserField.clear();
             regPassField.clear();
             regConfirmField.clear();
         // En cas d'erreur (ex: utilisateur déjà existant, mot de passe trop faible, etc.), le message d'erreur viendra de ton AuthService et sera affiché à l'utilisateur 
         } catch (exception.AuthException e) {
-            System.out.println("❌ Erreur : " + e.getMessage());
+            showAlert(javafx.scene.control.Alert.AlertType.ERROR, "Erreur", "Erreur lors de l'inscription : " + e.getMessage());
+
         }
     }
     // Méthodes pour gérer les effets de survol sur les boutons, en changeant leur style ou leur taille pour les rendre plus interactifs (ex: lorsque la souris entre ou sort d'un bouton, ces méthodes sont appelées pour appliquer un style de survol ou un effet de zoom)
@@ -95,5 +96,35 @@ public class WelcomeController { // Contrôleur pour la page de bienvenue (conne
     private void handleHoverExitGreen(MouseEvent e) {  // Réinitialise la taille du bouton lorsque la souris sort de celui-ci
         ((Node)e.getSource()).setScaleX(1.0); 
         ((Node)e.getSource()).setScaleY(1.0); 
+    }
+
+   private void showAlert(javafx.scene.control.Alert.AlertType type, String title, String message) {
+        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(type);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+
+        // On récupère la fenêtre pour l'icône
+        javafx.stage.Stage stage = (javafx.stage.Stage) alert.getDialogPane().getScene().getWindow();
+        
+        try {
+            // 1. Chargement de l'icône
+            java.io.InputStream iconStream = getClass().getResourceAsStream("/view/icon.png"); // Vérifie si l'icône est aussi dans /view/
+            if (iconStream != null) {
+                stage.getIcons().add(new javafx.scene.image.Image(iconStream));
+            }
+
+            // 2. Chargement du CSS (Déplacé ici pour éviter le crash si le chemin est faux)
+            java.net.URL cssUrl = getClass().getResource("/view/style.css");
+            if (cssUrl != null) {
+                alert.getDialogPane().getStylesheets().add(cssUrl.toExternalForm());
+                alert.getDialogPane().getStyleClass().add("my-alert");
+            }
+        } catch (Exception e) {
+            // En cas d'erreur, on ne fait rien, l'alerte s'affichera avec le style par défaut
+            System.out.println("⚠️ Style de l'alerte non chargé : " + e.getMessage());
+        }
+
+        alert.showAndWait();
     }
 }
