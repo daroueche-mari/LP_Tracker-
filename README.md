@@ -1,3 +1,4 @@
+Pour le lancement sans IDE : LP Tracker Student Management.jar 
 Database.sql contient les commandes nécessaires pour la creation de la base de donnée.
 
 ***
