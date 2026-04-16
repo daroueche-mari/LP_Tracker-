@@ -9,6 +9,44 @@
 
 ---
 
+## ☁️ Architecture Cloud (Supabase)
+
+Pour ce projet, nous avons fait le choix d'une architecture **Cloud-First** en migrant la base de données locale vers **Supabase** (PostgreSQL).
+
+### 🚀 Pourquoi Supabase ?
+* **Disponibilité** : L'application est accessible depuis n'importe quel poste sans installation de serveur local.
+* **Sécurité** : Gestion centralisée des accès et chiffrement des données.
+* **Scalabilité** : Infrastructure robuste reposant sur AWS (région `eu-west-1`).
+
+### 🛠 Configuration de la Connexion
+L'application se connecte via le driver **JDBC PostgreSQL**. Les identifiants sont configurés dans la classe `util.DatabaseConnection` :
+
+```java
+// Configuration de la Direct Connection (Port 5432)
+private static final String URL = "jdbc:postgresql://[host].supabase.co:5432/postgres";
+private static final String USER = "postgres.[project-id]";
+private static final String PASSWORD = "****************";
+```
+
+### 📊 Schéma de la Base de Données
+Le schéma est composé de deux tables principales optimisées pour la performance :
+* **`users`** : Stockage des comptes administrateurs avec hachage **BCrypt + Sel**.
+* **`student`** : Gestion des données académiques (Nom, Prénom, Âge, Note).
+
+---
+
+## 🛠 Installation & Déploiement
+
+1.  **Prérequis** : Java 21+ et Maven installés.
+2.  **Compilation** : 
+    ```bash
+    mvn clean package
+    ```
+3.  **Lancement** : 
+    Le fichier exécutable se trouve dans le dossier `/target`.
+    ```bash
+    java -jar laplateforme_tracker-1.0-SNAPSHOT.jar
+    ```
 ## Fonctionnalités Principales
 
 ### Gestion des Étudiants (CRUD)
