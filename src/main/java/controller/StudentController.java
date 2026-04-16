@@ -39,11 +39,15 @@ public class StudentController {
     private final ExportService exportService = new ExportService();
     private final StudentService studentService = new StudentService();
     private final ObservableList<Student> masterData = FXCollections.observableArrayList();
+    @FXML private TableColumn<Student, Integer> idColumn;
+    @FXML private TextField searchField;
     // --- Pagination & Infinite Scroll ---
     private int currentPage = 0;
     private final int ROWS_PER_PAGE = 20;
     private boolean isLoading = false;
-    
+    @FXML private Label statsCount;
+    @FXML private Label statsAverage;
+
     @FXML
     public void initialize() { // Méthode d'initialisation appelée automatiquement par JavaFX après le chargement du FXML (ex: pour configurer les colonnes de la TableView, initialiser les filtres, charger les données initiales, etc.)
         // 1. Liaison colonnes
@@ -51,7 +55,7 @@ public class StudentController {
         colLastName.setCellValueFactory(new PropertyValueFactory<>("lastName"));
         colAge.setCellValueFactory(new PropertyValueFactory<>("age"));
         colGrade.setCellValueFactory(new PropertyValueFactory<>("grade"));
-
+        idColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
         // 2. ComboBox Âge
         ObservableList<String> ages = FXCollections.observableArrayList("Tous");
         for (int i = 18; i <= 70; i++) { ages.add(String.valueOf(i)); }
@@ -71,6 +75,7 @@ public class StudentController {
         studentTable.setItems(sortedData);
         // 6. Setup de l'infinite scrolling (doit être fait après que la TableView soit complètement initialisée)
         Platform.runLater(this::setupInfiniteScrolling);
+        updateStatistics();
     }
     // Méthode pour appliquer les filtres de recherche et d'âge à la liste des étudiants affichée dans la TableView (ex: lorsque l'utilisateur tape dans les champs de recherche ou change le filtre d'âge, la liste se met à jour automatiquement pour ne montrer que les étudiants correspondants)
     private void applyFilters(FilteredList<Student> filteredData) {
@@ -112,6 +117,7 @@ public class StudentController {
         } catch (ValidationException e) { // En cas de ValidationException, on affiche une alerte d'erreur avec le message de l'exception (ex: si l'utilisateur a saisi une note invalide ou un âge hors des limites, il recevra un message d'erreur clair indiquant le problème)
             showError("Erreur de saisie", e.getMessage());
         }
+        updateStatistics();
     }
     // Méthode pour gérer la mise à jour d'un étudiant sélectionné dans la TableView, en utilisant le Service pour la validation et la logique métier (ex: lorsque l'utilisateur modifie les détails d'un étudiant et clique sur "Enregistrer", cette méthode est appelée pour valider les données et mettre à jour l'étudiant dans la base de données)
     @FXML
@@ -142,7 +148,40 @@ public class StudentController {
             showNotification("Suppression", "Étudiant retiré.");
             refreshTable();
         }
+        updateStatistics();
     }
+    @FXML
+    private void handleSearchById() {
+        // 1. On récupère l'ID depuis le champ de texte de recherche
+        String idText = searchField.getText().trim(); 
+
+        if (idText.isEmpty()) {
+            showAlert(Alert.AlertType.WARNING, "Champ vide", "Veuillez entrer l'ID de l'étudiant à rechercher.");
+            return;
+        }
+
+        try {
+            int id = Integer.parseInt(idText);
+
+            // 2. Appel au DAO pour récupérer l'étudiant
+            Student student = studentDAO.getStudentById(id);
+
+            if (student != null) {
+                // 3. Affichage du résultat dans une alerte
+                showAlert(Alert.AlertType.INFORMATION, "Résultat de la recherche", 
+                    "🎓 Étudiant trouvé :\n\n" +
+                    "• ID : " + student.getId() + "\n" +
+                    "• Nom : " + student.getFirstName() + "\n" +
+                    "• Prénom : " + student.getLastName() + "\n" +
+                    "• Âge : " + student.getAge() + "\n" +
+                    "• Moyenne : " + student.getGrade() + "/20");
+            } else {
+                showAlert(Alert.AlertType.ERROR, "Non trouvé", "Aucun étudiant n'existe avec l'ID : " + id);
+            }
+        } catch (NumberFormatException e) {
+            showAlert(Alert.AlertType.ERROR, "Erreur de format", "L'ID doit être un nombre entier.");
+        }
+}
 
     // --- EXPORTS & STATS ---
     // Méthode pour mettre à jour les statistiques affichées en fonction de la sélection actuelle dans la TableView (ex: pour afficher la moyenne des notes des étudiants actuellement affichés, ou d'autres statistiques pertinentes, afin de donner à l'utilisateur une vue d'ensemble de la promotion)
@@ -265,5 +304,51 @@ public class StudentController {
         List<Student> nextStudents = studentDAO.getStudentsPaged(currentPage, ROWS_PER_PAGE);
         if (nextStudents != null && !nextStudents.isEmpty()) masterData.addAll(nextStudents);
         isLoading = false;
+    }
+    // Méthode pour afficher une alerte avec un style personnalisé, en essayant de charger une icône et une feuille de style CSS pour améliorer l'apparence de l'alerte (ex: pour rendre les messages d'alerte plus visuellement attrayants et cohérents avec le thème de l'application)
+    private void showAlert(javafx.scene.control.Alert.AlertType type, String title, String message) {
+        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(type);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+
+        // On récupère la fenêtre pour l'icône
+        javafx.stage.Stage stage = (javafx.stage.Stage) alert.getDialogPane().getScene().getWindow();
+        
+        try {
+            // 1. Chargement de l'icône
+            java.io.InputStream iconStream = getClass().getResourceAsStream("/view/icon.png"); // Vérifie si l'icône est aussi dans /view/
+            if (iconStream != null) {
+                stage.getIcons().add(new javafx.scene.image.Image(iconStream));
+            }
+
+            // 2. Chargement du CSS (Déplacé ici pour éviter le crash si le chemin est faux)
+            java.net.URL cssUrl = getClass().getResource("/view/style.css");
+            if (cssUrl != null) {
+                alert.getDialogPane().getStylesheets().add(cssUrl.toExternalForm());
+                alert.getDialogPane().getStyleClass().add("my-alert");
+            }
+        } catch (Exception e) {
+            // En cas d'erreur, on ne fait rien, l'alerte s'affichera avec le style par défaut
+            System.out.println("⚠️ Style de l'alerte non chargé : " + e.getMessage());
+        }
+
+        alert.showAndWait();
+    }
+    
+    // Méthode pour mettre à jour les statistiques affichées en fonction de la sélection actuelle dans la TableView, en calculant le nombre d'étudiants et la moyenne des notes, puis en affichant ces informations dans les labels correspondants (ex: pour donner à l'utilisateur une vue d'ensemble de la promotion, en montrant combien d'étudiants sont actuellement affichés et quelle est leur moyenne générale)
+    private void updateStatistics() {
+        ObservableList<Student> students = studentTable.getItems();
+        int count = students.size();
+        double sum = 0;
+
+        for (Student s : students) {
+            sum += s.getGrade(); // On utilise getGrade() comme convenu
+        }
+
+        double average = (count > 0) ? sum / count : 0;
+
+        statsCount.setText(String.valueOf(count));
+        statsAverage.setText(String.format("%.2f / 20", average));
     }
 }
