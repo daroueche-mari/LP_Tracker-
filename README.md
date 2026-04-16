@@ -37,7 +37,7 @@ Le schéma est composé de deux tables principales optimisées pour la performan
 
 ## 🛠 Installation & Déploiement
 
-1.  **Prérequis** : Java 21+ et Maven installés.
+1.  **Prérequis** : Java 25 et Maven installés.
 2.  **Compilation** : 
     ```bash
     mvn clean package
