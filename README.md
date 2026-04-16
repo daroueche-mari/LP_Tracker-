@@ -19,7 +19,7 @@ Pour ce projet, nous avons fait le choix d'une architecture **Cloud-First** en m
 * **Scalabilité** : Infrastructure robuste reposant sur AWS (région `eu-west-1`).
 
 ### 🛠 Configuration de la Connexion
-L'application se connecte via le driver **JDBC PostgreSQL**. Les identifiants sont configurés dans la classe `util.DatabaseConnection` :
+L'application se connecte via le driver **JDBC PostgreSQL**. Les identifiants sont configurés dans la classe `dao.DatabaseConnection` :
 
 ```java
 // Configuration de la Direct Connection (Port 5432)
