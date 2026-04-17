@@ -17,6 +17,7 @@ public class AuthService {
     /**
      * Méthode principale de connexion
      */
+    // Elle prend le nom d'utilisateur et le mot de passe en entrée, vérifie les informations d'identification, et renvoie l'objet User correspondant si la connexion est réussie. Sinon, elle lance une AuthException avec un message d'erreur approprié.
     public User login(String username, String password) throws AuthException {
         User user = userDAO.getUserByUsername(username);
 

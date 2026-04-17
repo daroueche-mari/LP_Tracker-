@@ -4,11 +4,12 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import model.Student;
+import util.QueryExecutor;
 
 public class StudentDAO {
 
-    // --- MÉTHODE UTILITAIRE (Pour éviter de répéter le mappage) ---
-private Student mapResultSetToStudent(ResultSet rs) throws SQLException { // Méthode pour convertir une ligne de résultat SQL en un objet Student (ex: lors de la récupération des étudiants depuis la base de données)
+    // --- MÉTHODE UTILITAIRE (Mappage SQL -> Objet) ---
+    private Student mapResultSetToStudent(ResultSet rs) throws SQLException {
         return new Student(
             rs.getInt("id"),
             rs.getString("first_name"),
@@ -18,22 +19,38 @@ private Student mapResultSetToStudent(ResultSet rs) throws SQLException { // Mé
         );
     }
 
-    // --- ACTIONS CRUD ---
-
-    public void addStudent(Student student) { // Méthode pour ajouter un nouvel étudiant à la base de données (ex: lorsque l'utilisateur remplit le formulaire d'ajout et clique sur "Enregistrer")
+    // --- ACTIONS CRUD (Utilisent QueryExecutor pour la sécurité) ---
+    // Méthode d'ajout d'un étudiant. Elle prend un objet Student, construit la requête SQL d'insertion, et utilise QueryExecutor pour l'exécuter en toute sécurité.
+    public boolean addStudent(Student student) {
         String sql = "INSERT INTO student (first_name, last_name, age, grade) VALUES (?, ?, ?, ?)";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, student.getFirstName());
-            pstmt.setString(2, student.getLastName());
-            pstmt.setInt(3, student.getAge());
-            pstmt.setDouble(4, student.getGrade());
-            pstmt.executeUpdate();
-            System.out.println("✅ [DAO] Étudiant inséré.");
-        } catch (SQLException e) { e.printStackTrace(); }
+        
+        int result = QueryExecutor.executeUpdate(sql, 
+            student.getFirstName(), 
+            student.getLastName(), 
+            student.getAge(), 
+            student.getGrade()
+        );
+
+        return result > 0; // Retourne true si une ligne a été créée
+    }
+    // Méthode de mise à jour d'un étudiant. Elle prend un objet Student avec un ID existant, construit la requête SQL de mise à jour, et utilise QueryExecutor pour l'exécuter en toute sécurité.
+    public void updateStudent(Student student) {
+        String sql = "UPDATE student SET first_name = ?, last_name = ?, age = ?, grade = ? WHERE id = ?";
+        QueryExecutor.executeUpdate(sql, 
+            student.getFirstName(), 
+            student.getLastName(), 
+            student.getAge(), 
+            student.getGrade(), 
+            student.getId()
+        );
+        System.out.println("✅ [DAO] Étudiant mis à jour.");
     }
 
-    public List<Student> getAllStudents() { // Méthode pour récupérer tous les étudiants de la base de données (ex: pour afficher la liste complète des étudiants dans l'interface principale)
+    
+
+    // --- LECTURE ET RECHERCHE (Gérées classiquement pour le ResultSet) ---
+    // Méthode pour récupérer tous les étudiants de la base de données. Elle exécute une requête SQL de sélection, parcourt le ResultSet, convertit chaque ligne en un objet Student, et retourne la liste complète.
+    public List<Student> getAllStudents() {
         List<Student> students = new ArrayList<>();
         String sql = "SELECT * FROM student ORDER BY id ASC";
         try (Connection conn = DatabaseConnection.getConnection();
@@ -45,32 +62,8 @@ private Student mapResultSetToStudent(ResultSet rs) throws SQLException { // Mé
         } catch (SQLException e) { e.printStackTrace(); }
         return students;
     }
-
-    public void updateStudent(Student student) { // Méthode pour mettre à jour les informations d'un étudiant dans la base de données en fonction de son ID (ex: lorsque l'utilisateur modifie les détails d'un étudiant et clique sur "Enregistrer")
-        String sql = "UPDATE student SET first_name = ?, last_name = ?, age = ?, grade = ? WHERE id = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, student.getFirstName());
-            pstmt.setString(2, student.getLastName());
-            pstmt.setInt(3, student.getAge());
-            pstmt.setDouble(4, student.getGrade());
-            pstmt.setInt(5, student.getId());
-            pstmt.executeUpdate();
-        } catch (SQLException e) { e.printStackTrace(); }
-    }
-
-    public void deleteStudent(int id) { // Méthode pour supprimer un étudiant de la base de données en fonction de son ID (ex: lorsque l'utilisateur clique sur le bouton "Supprimer" dans les détails d'un étudiant)
-        String sql = "DELETE FROM student WHERE id = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, id);
-            pstmt.executeUpdate();
-        } catch (SQLException e) { e.printStackTrace(); }
-    }
-
-    // --- RECHERCHES ET FILTRES ---
-
-    public Student getStudentById(int id) { // Méthode pour récupérer un étudiant par son ID (ex: pour afficher les détails d'un étudiant ou pré-remplir le formulaire de modification)
+    // Méthode pour récupérer un étudiant spécifique en fonction de son ID. Elle exécute une requête SQL de sélection avec une condition WHERE, vérifie si un résultat est retourné, et convertit la ligne en un objet Student.
+    public Student getStudentById(int id) {
         String sql = "SELECT * FROM student WHERE id = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -80,54 +73,56 @@ private Student mapResultSetToStudent(ResultSet rs) throws SQLException { // Mé
         } catch (SQLException e) { e.printStackTrace(); }
         return null;
     }
-
-    public List<Student> findAdvanced(String firstName, String lastName, Integer age) { // Méthode de recherche avancée qui construit dynamiquement la requête SQL en fonction des critères fournis (ex: rechercher par prénom, nom, âge ou une combinaison de ces critères)
+    // Méthode de recherche avancée. Elle prend des critères de recherche (prénom, nom, âge), construit dynamiquement la requête SQL en fonction des critères fournis, exécute la requête, et retourne la liste des étudiants correspondants.
+    public List<Student> findAdvanced(String firstName, String lastName, Integer age) {
         List<Student> list = new ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT * FROM student WHERE 1=1");
-        
-        if (firstName != null && !firstName.isEmpty()) sql.append(" AND first_name ILIKE ?");
-        if (lastName != null && !lastName.isEmpty()) sql.append(" AND last_name ILIKE ?");
-        if (age != null && age > 0) sql.append(" AND age = ?");
+        List<Object> params = new ArrayList<>();
+
+        if (firstName != null && !firstName.isEmpty()) {
+            sql.append(" AND first_name ILIKE ?");
+            params.add("%" + firstName + "%");
+        }
+        if (lastName != null && !lastName.isEmpty()) {
+            sql.append(" AND last_name ILIKE ?");
+            params.add("%" + lastName + "%");
+        }
+        if (age != null && age > 0) {
+            sql.append(" AND age = ?");
+            params.add(age);
+        }
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
-            int idx = 1;
-            if (firstName != null && !firstName.isEmpty()) pstmt.setString(idx++, "%" + firstName + "%");
-            if (lastName != null && !lastName.isEmpty()) pstmt.setString(idx++, "%" + lastName + "%");
-            if (age != null && age > 0) pstmt.setInt(idx++, age);
-
+            for (int i = 0; i < params.size(); i++) {
+                pstmt.setObject(i + 1, params.get(i));
+            }
             ResultSet rs = pstmt.executeQuery();
             while (rs.next()) { list.add(mapResultSetToStudent(rs)); }
         } catch (SQLException e) { e.printStackTrace(); }
         return list;
     }
 
-    // --- PAGINATION ET STATS ---
-
-  public List<Student> getStudentsPaged(int page, int size) { // Méthode pour obtenir une liste paginée d'étudiants (ex: page 0 = 1-20, page 1 = 21-40, etc.)
-    List<Student> list = new ArrayList<>();
-    // Calcul de l'offset : Si page 0 -> offset 0. Si page 1 -> offset 20.
-    int offset = page * size; 
-    
-    String sql = "SELECT * FROM student ORDER BY id LIMIT ? OFFSET ?";
-    
-    try (Connection conn = DatabaseConnection.getConnection();
-         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+    // --- PAGINATION ET STATS (Méthodes de calcul) ---
+    // Méthode pour récupérer une page d'étudiants. Elle prend le numéro de page et la taille de page, calcule l'offset, exécute une requête SQL avec LIMIT et OFFSET, et retourne la liste des étudiants pour cette page.
+    public List<Student> getStudentsPaged(int page, int size) {
+        List<Student> list = new ArrayList<>();
+        int offset = page * size; 
+        String sql = "SELECT * FROM student ORDER BY id LIMIT ? OFFSET ?";
         
-        pstmt.setInt(1, size);   // La limite (combien d'étudiants on veut)
-        pstmt.setInt(2, offset); // Le point de départ (offset)
-        
-        ResultSet rs = pstmt.executeQuery();
-        while (rs.next()) {
-            list.add(mapResultSetToStudent(rs));
-        }
-    } catch (SQLException e) {
-        e.printStackTrace();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, size);
+            pstmt.setInt(2, offset);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                list.add(mapResultSetToStudent(rs));
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return list;
     }
-    return list;
-}
-
-    public String getGlobalStats() { // Méthode pour obtenir des statistiques globales sur les étudiants (total, moyenne, répartition par âge)
+    // Méthode pour récupérer les statistiques globales. Elle exécute une requête SQL qui utilise COUNT et AVG pour obtenir le nombre total d'étudiants et la moyenne des notes, ainsi qu'une requête GROUP BY pour obtenir la répartition par âge, puis formate ces informations dans une chaîne de caractères.
+    public String getGlobalStats() {
         String sqlGlobal = "SELECT COUNT(*), AVG(grade) FROM student"; 
         String sqlGrouped = "SELECT age, COUNT(*) as nb FROM student GROUP BY age ORDER BY age"; 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -148,4 +143,47 @@ private Student mapResultSetToStudent(ResultSet rs) throws SQLException { // Mé
             return stats.toString();
         } catch (SQLException e) { return "Stats indisponibles"; }
     }
+
+   // --- SUPPRESSION MULTIPLE ---
+   // Méthode pour supprimer plusieurs étudiants en fonction d'une liste d'IDs. Elle construit une requête SQL avec une clause IN, et utilise QueryExecutor pour l'exécuter en toute sécurité.
+public void deleteMultiple(List<Integer> ids) {
+    if (ids == null || ids.isEmpty()) return;
+    
+    // On prépare la liste d'IDs : "1, 2, 3"
+    String idList = ids.stream()
+                       .map(String::valueOf)
+                       .collect(java.util.stream.Collectors.joining(","));
+                       
+    // On construit la requête (Attention : vérifie si c'est 'student' ou 'students')
+    String sql = "DELETE FROM student WHERE id IN (" + idList + ")";
+    
+    // On utilise QueryExecutor qui gère tout le travail SQL
+    QueryExecutor.executeUpdate(sql);
+}
+// --- IMPORTATION EN BATCH (Performance) ---
+// Méthode pour ajouter une liste d'étudiants en une seule opération. Elle prend
+public void addStudentsBatch(List<Student> students) {
+    String sql = "INSERT INTO student (first_name, last_name, age, grade) VALUES (?, ?, ?, ?)";
+    
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        
+        // On désactive l'auto-commit pour la rapidité
+        conn.setAutoCommit(false);
+
+        for (Student s : students) {
+            pstmt.setString(1, s.getFirstName());
+            pstmt.setString(2, s.getLastName());
+            pstmt.setInt(3, s.getAge());
+            pstmt.setDouble(4, s.getGrade());
+            pstmt.addBatch(); // On ajoute à la pile, on n'envoie pas encore
+        }
+
+        pstmt.executeBatch(); // On envoie tout d'un coup !
+        conn.commit();        // On valide la transaction
+        
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+}
 }

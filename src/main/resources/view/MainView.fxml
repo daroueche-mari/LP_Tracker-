@@ -63,7 +63,7 @@
                      </rowConstraints>
                   </GridPane>
                   <HBox alignment="CENTER_RIGHT" spacing="10">
-                     <Button onAction="#handleDeleteStudent" styleClass="btn-delete" text="🗑️ Supprimer" />
+                     <Button onAction="#handleDelete" styleClass="btn-delete" text="🗑️ Supprimer" />
                      <Button onAction="#handleUpdateStudent" styleClass="btn-update" text="🔄 Modifier" />
                      <Button onAction="#handleAddStudent" prefWidth="120" styleClass="btn-add" text="➕ Ajouter" />
                   </HBox>
@@ -117,6 +117,8 @@
           <Label text="📈 Moyenne Générale :" style="-fx-font-weight: bold;" />
           <Label fx:id="statsAverage" text="0.00 / 20" textFill="#27ae60" style="-fx-font-weight: bold;" />
       </HBox>
+      <Button onAction="#handleShowStatisticsChart" styleClass="btn-stats" 
+        text="📊 Voir Graphique" />
    </children>
 </HBox>
       </VBox>

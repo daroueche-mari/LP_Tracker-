@@ -6,7 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class UserDAO {
-
+    // --- CRUD CLASSIQUE (SQL Brut, pas de QueryExecutor pour montrer la différence) ---
+    // Méthode pour enregistrer un nouvel utilisateur dans la base de données (ex: lors de l'inscription, après que le service d'authentification ait généré le hash et le sel du mot de passe)
     public boolean saveUser(String username, String hash, String salt, String avatarUrl) { // Méthode pour enregistrer un nouvel utilisateur dans la base de données (ex: lors de l'inscription, après que le service d'authentification ait généré le hash et le sel du mot de passe)
         String sql = "INSERT INTO users (username, password, salt, avatar_url) VALUES (?, ?, ?, ?)";
         try (Connection conn = DatabaseConnection.getConnection();
@@ -23,7 +24,7 @@ public class UserDAO {
             return false;
         }
     }
-
+    // Méthode pour récupérer un utilisateur de la base de données en fonction de son nom d'utilisateur (ex: lors de la connexion pour vérifier les informations d'identification)
     public User getUserByUsername(String username) { // Méthode pour récupérer un utilisateur de la base de données en fonction de son nom d'utilisateur (ex: lors de la connexion pour vérifier les informations d'identification)
         String sql = "SELECT * FROM users WHERE username = ?";
         try (Connection conn = DatabaseConnection.getConnection();
@@ -40,7 +41,7 @@ public class UserDAO {
         }
         return null;
     }
-
+    // Méthode pour récupérer tous les utilisateurs de la base de données (ex: pour afficher une liste d'utilisateurs dans une section d'administration ou pour des fonctionnalités sociales)
     public List<User> getAllUsers() { // Méthode pour récupérer tous les utilisateurs de la base de données (ex: pour afficher une liste d'utilisateurs dans une section d'administration ou pour des fonctionnalités sociales)
         List<User> users = new ArrayList<>();
         String sql = "SELECT * FROM users ORDER BY username ASC";
@@ -56,7 +57,7 @@ public class UserDAO {
         }
         return users;
     }
-
+    // Méthode pour supprimer un utilisateur de la base de données en fonction de son ID (ex: pour permettre à un utilisateur de supprimer son compte ou pour des fonctionnalités d'administration)
     private User mapResultSetToUser(ResultSet rs) throws SQLException { // Méthode pour convertir une ligne de résultat SQL en un objet User (ex: lors de la récupération d'un utilisateur par son nom d'utilisateur)
         return new User(
             rs.getInt("id"),

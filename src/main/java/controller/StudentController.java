@@ -1,354 +1,313 @@
 package controller;
-// Importations des classes nécessaires pour le fonctionnement du contrôleur (ex: pour gérer les événements, manipuler les composants de l'interface utilisateur, interagir avec les services et les DAO, etc.)
+
 import dao.StudentDAO;
 import exception.ValidationException;
-import javafx.application.Platform;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.collections.transformation.FilteredList;
-import javafx.collections.transformation.SortedList;
-import javafx.event.ActionEvent;
-import javafx.fxml.FXML;
-import javafx.geometry.Orientation;
-import javafx.scene.Node;
-import javafx.scene.control.*;
-import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.input.MouseEvent;
-import javafx.stage.FileChooser;
 import model.Student;
 import service.ExportService;
 import service.StudentService;
+import view.AppView;
+import view.StatChartView;
 import util.UIUtils;
 
-import java.io.File;
 import java.util.List;
-
+import javafx.fxml.FXML;
+import javafx.event.ActionEvent;
+// Importations des classes nécessaires pour le fonctionnement du controller de gestion des étudiants (ex: pour interagir avec la vue, appeler les méthodes du service, gérer les événements liés à l'interface utilisateur, etc.)
 public class StudentController {
-    // --- UI Components ---
-    @FXML private TextField fNameInput, lNameInput, ageInput, gradeInput; 
-    @FXML private TableView<Student> studentTable;
-    @FXML private TableColumn<Student, String> colFirstName, colLastName;
-    @FXML private TableColumn<Student, Integer> colAge;
-    @FXML private TableColumn<Student, Double> colGrade;
-    @FXML private ComboBox<String> ageFilterCombo;
-    @FXML private TextField searchFirstName, searchLastName;
-    @FXML private Label statsLabel; // Optionnel : pour afficher la moyenne en direct
 
-    // --- Services ---
+    @FXML private Object fNameInput, lNameInput, ageInput, gradeInput, searchField;
+    @FXML private Object searchFirstName, searchLastName;
+    @FXML private Object studentTable;
+    @FXML private Object idColumn, colFirstName, colLastName, colAge, colGrade;
+    @FXML private Object ageFilterCombo;
+    @FXML private Object statsCount, statsAverage;
+
     private final StudentDAO studentDAO = new StudentDAO();
     private final ExportService exportService = new ExportService();
-    private final StudentService studentService = new StudentService();
-    private final ObservableList<Student> masterData = FXCollections.observableArrayList();
-    @FXML private TableColumn<Student, Integer> idColumn;
-    @FXML private TextField searchField;
-    // --- Pagination & Infinite Scroll ---
-    private int currentPage = 0;
-    private final int ROWS_PER_PAGE = 20;
-    private boolean isLoading = false;
-    @FXML private Label statsCount;
-    @FXML private Label statsAverage;
+    private StudentService studentService;
+    private List<Student> masterData = new java.util.ArrayList<>();
 
-    @FXML
-    public void initialize() { // Méthode d'initialisation appelée automatiquement par JavaFX après le chargement du FXML (ex: pour configurer les colonnes de la TableView, initialiser les filtres, charger les données initiales, etc.)
-        // 1. Liaison colonnes
-        colFirstName.setCellValueFactory(new PropertyValueFactory<>("firstName"));
-        colLastName.setCellValueFactory(new PropertyValueFactory<>("lastName"));
-        colAge.setCellValueFactory(new PropertyValueFactory<>("age"));
-        colGrade.setCellValueFactory(new PropertyValueFactory<>("grade"));
-        idColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
-        // 2. ComboBox Âge
-        ObservableList<String> ages = FXCollections.observableArrayList("Tous");
-        for (int i = 18; i <= 70; i++) { ages.add(String.valueOf(i)); }
-        ageFilterCombo.setItems(ages);
-        ageFilterCombo.setValue("Tous");
+    public StudentController() {
+        this.studentService = new StudentService(); // Valeur par défaut pour l'appli
+    }
 
-        // 3. Données et Filtres
+    // Ce setter permettra au test de remplacer le vrai service par le faux
+    public void setStudentService(StudentService studentService) {
+        this.studentService = studentService;
+    }
+    @FXML // Méthode d'initialisation du controller. Elle est appelée automatiquement par JavaFX après le chargement de la vue. C'est ici que tu configures ton tableau, tes filtres, et que tu charges les données initiales.
+    public void initialize() { 
+        // Configuration initiale via AppView
+        AppView.setupTable(studentTable, idColumn, colFirstName, colLastName, colAge, colGrade);
+        AppView.setupFilters(ageFilterCombo, searchFirstName, searchLastName, this::onFilterChange);
+        // AppView.setupScroll(studentTable, () -> { if (!isLoading) loadNextPage(); });
+        AppView.optimizeTablePerformance(studentTable);    
+        AppView.enableMultipleSelection(studentTable);
         refreshTable();
-        FilteredList<Student> filteredData = new FilteredList<>(masterData, p -> true);
-        // 4. Listeners pour les champs de recherche et le ComboBox de filtre d'âge
-        searchFirstName.textProperty().addListener((obs, old, val) -> applyFilters(filteredData));
-        searchLastName.textProperty().addListener((obs, old, val) -> applyFilters(filteredData));
-        ageFilterCombo.valueProperty().addListener((obs, old, val) -> applyFilters(filteredData));
-        // 5. Tri et liaison avec la TableView
-        SortedList<Student> sortedData = new SortedList<>(filteredData);
-        sortedData.comparatorProperty().bind(studentTable.comparatorProperty());
-        studentTable.setItems(sortedData);
-        // 6. Setup de l'infinite scrolling (doit être fait après que la TableView soit complètement initialisée)
-        Platform.runLater(this::setupInfiniteScrolling);
+        AppView.enableMultipleSelection(studentTable);
+    }
+    // Méthode pour afficher les statistiques globales (total d'élèves, moyenne générale, répartition par âge) en utilisant une requête SQL GROUP BY dans le DAO.
+    private void refreshTable() {
+        masterData = studentDAO.getAllStudents(); 
+        AppView.setTableItems(studentTable, masterData);
         updateStatistics();
     }
-    // Méthode pour appliquer les filtres de recherche et d'âge à la liste des étudiants affichée dans la TableView (ex: lorsque l'utilisateur tape dans les champs de recherche ou change le filtre d'âge, la liste se met à jour automatiquement pour ne montrer que les étudiants correspondants)
-    private void applyFilters(FilteredList<Student> filteredData) {
-        filteredData.setPredicate(student -> {
-            String fNameFilter = searchFirstName.getText().toLowerCase().trim();
-            String lNameFilter = searchLastName.getText().toLowerCase().trim();
-            String ageFilter = ageFilterCombo.getValue();
-            // Vérification des critères de filtrage
-            if (!fNameFilter.isEmpty() && !student.getFirstName().toLowerCase().contains(fNameFilter)) return false;
-            if (!lNameFilter.isEmpty() && !student.getLastName().toLowerCase().contains(lNameFilter)) return false;
-            if (ageFilter != null && !ageFilter.equals("Tous")) {
-                if (student.getAge() != Integer.parseInt(ageFilter)) return false;
-            }
-            return true;
-        });
-        updateLiveStats(); // Mise à jour auto de la moyenne quand on filtre
+    // Méthode appelée à chaque changement de filtre (texte ou ComboBox). Elle applique les filtres sur 'masterData' et met à jour la TableView et les statistiques.
+    private void onFilterChange() {
+        AppView.filterTable(
+            studentTable, 
+            masterData, 
+            AppView.getText(searchFirstName), 
+            AppView.getText(searchLastName), 
+            AppView.getValue(ageFilterCombo)
+        );
+        updateStatistics();
     }
-    // Méthode pour rafraîchir la TableView avec les données de la base de données, en réinitialisant la pagination et en mettant à jour les statistiques affichées (ex: après une opération de création, mise à jour ou suppression d'un étudiant, ou après l'importation de données)
-    private void refreshTable() {
-        currentPage = 0;
-        // Teste avec une limite beaucoup plus grande, genre 100
-        masterData.setAll(studentDAO.getStudentsPaged(currentPage, 100)); 
-        updateLiveStats();
-        studentTable.requestLayout();
-    }
-
-    // --- ACTIONS CRUD (Nettoyées grâce au Service) ---
-    // Les méthodes handleAddStudent, handleUpdateStudent et handleDeleteStudent utilisent désormais le StudentService pour la validation et la logique métier, ce qui permet de garder le Controller plus propre et de centraliser la logique de gestion des étudiants dans le Service (ex: pour faciliter la maintenance et les évolutions futures de l'application)
+    // --- GESTION DES ÉVÉNEMENTS (Appelent les méthodes du service et mettent à jour la vue) ---
+    // Méthode d'ajout d'un étudiant. Elle récupère les données du formulaire, valide et ajoute l'étudiant via le service, puis rafraîchit la TableView.
     @FXML
     private void handleAddStudent() {
-        try { // Appel à la méthode de validation et d'ajout du Service, qui peut lancer une ValidationException en cas de problème avec les données saisies
-            studentService.validateAndAdd(
-                fNameInput.getText(), lNameInput.getText(), 
-                ageInput.getText(), gradeInput.getText()
-            ); // Appel à la méthode de validation et d'ajout du Service, qui peut lancer une ValidationException en cas de problème avec les données saisies
-            showNotification("Succès", "Étudiant ajouté avec succès !");
+        try {
+            // 1. On récupère les textes bruts
+            String fName = AppView.getText(fNameInput);
+            String lName = AppView.getText(lNameInput);
+            String ageStr = AppView.getText(ageInput);
+            String gradeStr = AppView.getText(gradeInput);
+
+            // 2. On appelle le SERVICE (c'est lui qui fait tout le boulot)
+            // Assure-toi d'avoir injecté ton service : private StudentService studentService = new StudentService();
+            studentService.validateAndAdd(fName, lName, ageStr, gradeStr);
+
+            // 3. Si on arrive ici, c'est que ça a marché !
+            AppView.notifySuccess("Étudiant ajouté avec succès !");
             refreshTable();
-            handleResetFilters();
-        } catch (ValidationException e) { // En cas de ValidationException, on affiche une alerte d'erreur avec le message de l'exception (ex: si l'utilisateur a saisi une note invalide ou un âge hors des limites, il recevra un message d'erreur clair indiquant le problème)
-            showError("Erreur de saisie", e.getMessage());
+            AppView.clearFields(fNameInput, lNameInput, ageInput, gradeInput);
+            autoSave();
+
+        } catch (ValidationException e) {
+            // Ici, on attrape tes messages personnalisés ("L'âge doit être...", etc.)
+            AppView.notifyWarning("Validation", e.getMessage());
+        } catch (Exception e) {
+            // Ici, on attrape les erreurs imprévues (BDD, etc.)
+            AppView.notifyError("Erreur système", "Une erreur est survenue : " + e.getMessage());
         }
-        updateStatistics();
     }
-    // Méthode pour gérer la mise à jour d'un étudiant sélectionné dans la TableView, en utilisant le Service pour la validation et la logique métier (ex: lorsque l'utilisateur modifie les détails d'un étudiant et clique sur "Enregistrer", cette méthode est appelée pour valider les données et mettre à jour l'étudiant dans la base de données)
-    @FXML
+
+// Méthode de sauvegarde automatique silencieuse
+private void autoSave() {
+    try {
+        String path = "autosave_tracker.csv";
+        exportService.exportToCSV(AppView.getTableItems(studentTable), path);
+        System.out.println("☁️ [AutoSave] Données sauvegardées dans " + path);
+    } catch (Exception e) {
+        System.err.println("⚠️ Échec de la sauvegarde automatique.");
+    }
+}
+    
+    @FXML // Méthode de mise à jour d'un étudiant sélectionné. Elle récupère les données du formulaire, valide et met à jour l'étudiant via le service.
     private void handleUpdateStudent() {
-        Student selected = studentTable.getSelectionModel().getSelectedItem();
-        if (selected == null) { // Si aucun étudiant n'est sélectionné, on affiche une alerte d'erreur pour informer l'utilisateur qu'il doit sélectionner un étudiant avant de pouvoir le modifier (ex: pour éviter les erreurs de nullité et guider l'utilisateur dans l'utilisation de l'interface)
-            showError("Sélection", "Veuillez sélectionner un étudiant dans la liste.");
+        Student selected = (Student) AppView.getSelectedItem(studentTable);
+        if (selected == null) {
+            AppView.notifyWarning("Sélection", "Veuillez choisir un étudiant.");
             return;
         }
-        try { // Appel à la méthode de validation et de mise à jour du Service, qui peut lancer une ValidationException en cas de problème avec les données saisies (ex: si l'utilisateur a saisi une note invalide ou un âge hors des limites, il recevra un message d'erreur clair indiquant le problème)
-            studentService.validateAndUpdate(
-                selected, 
-                fNameInput.getText(), lNameInput.getText(), 
-                ageInput.getText(), gradeInput.getText()
-            ); // Appel à la méthode de validation et de mise à jour du Service, qui peut lancer une ValidationException en cas de problème avec les données saisies (ex: si l'utilisateur a saisi une note invalide ou un âge hors des limites, il recevra un message d'erreur clair indiquant le problème)
-            showNotification("Succès", "Données mises à jour.");
+        try {
+            studentService.validateAndUpdate(selected, 
+                AppView.getText(fNameInput), AppView.getText(lNameInput), 
+                AppView.getText(ageInput), AppView.getText(gradeInput));
+            AppView.notifySuccess("Données mises à jour.");
             refreshTable();
-        } catch (ValidationException e) { // En cas de ValidationException, on affiche une alerte d'erreur avec le message de l'exception (ex: si l'utilisateur a saisi une note invalide ou un âge hors des limites, il recevra un message d'erreur clair indiquant le problème)
-            showError("Erreur", e.getMessage());
+        } catch (ValidationException e) {
+            AppView.notifyError("Erreur", e.getMessage());
         }
     }
-    // Méthode pour gérer la suppression d'un étudiant sélectionné dans la TableView, en utilisant le Service pour effectuer la suppression (ex: lorsque l'utilisateur clique sur le bouton "Supprimer" dans les détails d'un étudiant, cette méthode est appelée pour supprimer l'étudiant de la base de données)
-    @FXML
-    private void handleDeleteStudent() {
-        Student selected = studentTable.getSelectionModel().getSelectedItem();
-        if (selected != null) { // Si un étudiant est sélectionné, on appelle la méthode de suppression du Service en passant l'ID de l'étudiant (ex: pour supprimer l'étudiant de la base de données)
-            studentService.deleteStudent(selected.getId());
-            showNotification("Suppression", "Étudiant retiré.");
-            refreshTable();
-        }
-        updateStatistics();
-    }
-    @FXML
-    private void handleSearchById() {
-        // 1. On récupère l'ID depuis le champ de texte de recherche
-        String idText = searchField.getText().trim(); 
 
+
+@FXML // Méthode de suppression d'un ou plusieurs étudiants sélectionnés. Elle récupère les IDs des étudiants sélectionnés et les supprime via le service.
+private void handleDelete() {
+    // 1. On utilise l'utilitaire pour récupérer la liste proprement
+    List<Student> selectedStudents = AppView.getSelectedStudents(studentTable);
+
+    // 2. Maintenant 'selectedStudents' est une vraie List, donc isEmpty() fonctionne !
+    if (selectedStudents.isEmpty()) {
+        AppView.notifyWarning("Sélection vide", "Veuillez sélectionner au moins un étudiant.");
+        return;
+    }
+
+    int count = selectedStudents.size();
+    String title = (count == 1) ? "Suppression unique" : "Suppression multiple";
+    
+    // 3. Accès aux éléments de la liste
+    String message = (count == 1) 
+        ? "Voulez-vous supprimer " + selectedStudents.get(0).getFirstName() + " " + selectedStudents.get(0).getLastName() + " ?"
+        : "Voulez-vous supprimer ces " + count + " étudiants ?";
+
+    if (AppView.showConfirmation(title, message)) {
+        try {
+            // 4. Extraction des IDs (stream() fonctionne sur une List !)
+            List<Integer> ids = selectedStudents.stream()
+                                                .map(Student::getId)
+                                                .toList();
+            
+            studentDAO.deleteMultiple(ids);
+            refreshTable();
+            AppView.notifySuccess(count + " étudiant(s) supprimé(s).");
+            
+        } catch (Exception e) {
+            AppView.notifyError("Erreur", "Impossible de supprimer la sélection.");
+        }
+    }
+}
+
+    @FXML // Méthode de recherche d'un étudiant par ID. Elle récupère l'ID saisi, valide, cherche l'étudiant via le DAO et affiche les résultats.
+    private void handleSearchById() {
+        String idText = AppView.getText(searchField);
+        
         if (idText.isEmpty()) {
-            showAlert(Alert.AlertType.WARNING, "Champ vide", "Veuillez entrer l'ID de l'étudiant à rechercher.");
+            AppView.notifyWarning("Champ vide", "Veuillez saisir un ID pour la recherche.");
             return;
         }
 
         try {
             int id = Integer.parseInt(idText);
-
-            // 2. Appel au DAO pour récupérer l'étudiant
-            Student student = studentDAO.getStudentById(id);
-
-            if (student != null) {
-                // 3. Affichage du résultat dans une alerte
-                showAlert(Alert.AlertType.INFORMATION, "Résultat de la recherche", 
-                    "🎓 Étudiant trouvé :\n\n" +
-                    "• ID : " + student.getId() + "\n" +
-                    "• Nom : " + student.getFirstName() + "\n" +
-                    "• Prénom : " + student.getLastName() + "\n" +
-                    "• Âge : " + student.getAge() + "\n" +
-                    "• Moyenne : " + student.getGrade() + "/20");
+            Student s = studentDAO.getStudentById(id);
+            
+            if (s != null) {
+                // 1. Remplissage automatique du formulaire
+                AppView.fillForm(s, fNameInput, lNameInput, ageInput, gradeInput);
+                
+                // 2. Sélection visuelle dans le tableau via l'utilitaire AppView
+                // Plus besoin de "instanceof" ou de "TableView" ici !
+                AppView.selectAndScroll(studentTable, s);
+                
+                // 3. Affichage des détails complets
+                String fullInfo = String.format(
+                    "✅ Étudiant trouvé (ID: %d)\n" +
+                    "----------------------------------\n" +
+                    "• Prénom : %s\n" +
+                    "• Nom : %s\n" +
+                    "• Âge : %d ans\n" +
+                    "• Note : %.2f / 20",
+                    s.getId(), s.getFirstName(), s.getLastName(), s.getAge(), s.getGrade()
+                );
+                AppView.notifySuccess(fullInfo);
+                
             } else {
-                showAlert(Alert.AlertType.ERROR, "Non trouvé", "Aucun étudiant n'existe avec l'ID : " + id);
+                AppView.notifyError("Introuvable", "Aucun étudiant ne correspond à l'ID " + id);
             }
         } catch (NumberFormatException e) {
-            showAlert(Alert.AlertType.ERROR, "Erreur de format", "L'ID doit être un nombre entier.");
-        }
-}
-
-    // --- EXPORTS & STATS ---
-    // Méthode pour mettre à jour les statistiques affichées en fonction de la sélection actuelle dans la TableView (ex: pour afficher la moyenne des notes des étudiants actuellement affichés, ou d'autres statistiques pertinentes, afin de donner à l'utilisateur une vue d'ensemble de la promotion)
-    private void updateLiveStats() {
-        if (statsLabel != null) {
-            statsLabel.setText(studentService.getFormattedStatsForSelection(studentTable.getItems()));
+            AppView.notifyError("Erreur de format", "L'ID doit être un nombre entier.");
         }
     }
-    // Méthode pour gérer l'exportation de la liste des étudiants et des statistiques dans un fichier HTML, en utilisant le Service d'exportation pour générer le fichier (ex: lorsque l'utilisateur clique sur "Exporter en HTML", cette méthode est appelée pour créer un rapport visuel de la promotion à partager ou à imprimer)
-    @FXML
-    private void handleExportHTML() {
-        File file = new File("Rapport_Promotion.html");
-        String stats = studentService.getGlobalStatsString();
-        exportService.exportToHTML(studentTable.getItems(), stats, file.getAbsolutePath());
-        // Après l'exportation, on tente d'ouvrir automatiquement le fichier HTML généré dans le navigateur par défaut de l'utilisateur (ex: pour offrir une expérience utilisateur fluide en permettant de visualiser immédiatement le rapport généré)
-        try {
-            if (java.awt.Desktop.isDesktopSupported()) {
-                java.awt.Desktop.getDesktop().browse(file.toURI());
-            }
-        } catch (Exception e) { showError("Erreur", "Impossible d'ouvrir le rapport."); } 
-    }
-
-    // --- LOGIQUE SCROLL & UI UTILS (Inchangé) ---
-    // Méthode pour gérer l'importation d'étudiants depuis un fichier CSV, en utilisant le Service d'exportation pour lire le fichier et ajouter les étudiants à la base de données (ex: lorsque l'utilisateur clique sur "Importer CSV", cette méthode est appelée pour permettre d'ajouter rapidement une liste d'étudiants à la promotion sans passer par l'interface de saisie)
-   @FXML
-    private void handleImportCSV() {
-        FileChooser fc = new FileChooser();
-        fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Fichiers CSV", "*.csv"));
-        File file = fc.showOpenDialog(studentTable.getScene().getWindow());
-        // Si un fichier est sélectionné, on appelle la méthode d'importation du Service en passant le chemin du fichier et le DAO pour ajouter les étudiants à la base de données, puis on rafraîchit la TableView pour afficher les nouveaux étudiants et on affiche une notification de succès (ex: pour permettre à l'utilisateur d'ajouter rapidement une liste d'étudiants à la promotion sans passer par l'interface de saisie)
-        if (file != null) {
+    // --- STATISTIQUES ---
+    // Méthode pour afficher les statistiques globales (total d'élèves, moyenne générale, répartition par âge) en utilisant une requête SQL GROUP BY dans le DAO.
+  @FXML
+private void handleImportCSV() { 
+    String path = AppView.showOpenDialog(studentTable);
+    if (path != null) {
+        // Ajout d'une confirmation avant l'importation massive
+        if (AppView.showConfirmation("Confirmation d'import", "Voulez-vous importer les données de ce fichier ?")) {
             try {
-                exportService.importFromCSV(file.getAbsolutePath(), studentDAO);
+                exportService.importFromCSV(path, studentDAO);
                 refreshTable();
-                // Utilisation de ta méthode utilitaire
-                showNotification("Import réussi", "Les données ont été intégrées avec succès !");
+                AppView.notifySuccess("Importation réussie !");
             } catch (Exception e) {
-                // Utilisation de ta méthode d'erreur
-                showError("Échec de l'import", "Erreur technique : " + e.getMessage());
+                AppView.notifyError("Erreur Import", "Le fichier est mal formé ou inaccessible.");
             }
         }
+    }
 }
-
-    @FXML // Méthodes pour gérer l'exportation de la liste des étudiants dans différents formats (CSV, JSON, XML), en utilisant le Service d'exportation pour générer les fichiers correspondants (ex: lorsque l'utilisateur clique sur "Exporter en CSV", "Exporter en JSON" ou "Exporter en XML", ces méthodes sont appelées pour créer les fichiers dans le format choisi)
-    private void handleExportCSV() { exportToFile("export.csv", "CSV", "*.csv", "csv"); }
+// --- EXPORTS ---
+// Méthodes pour exporter les données affichées dans la TableView vers différents formats (CSV
+@FXML
+private void handleExportCSV() {
+    String path = AppView.showSaveDialog(studentTable, "csv");
+    if (path != null) {
+        exportService.exportToCSV(AppView.getTableItems(studentTable), path);
+        AppView.notifySuccess("Fichier CSV exporté.");
+    }
+}
+// Méthodes pour exporter les données affichées dans la TableView vers différents formats (CSV, JSON, XML, HTML)
+@FXML
+private void handleExportJSON() {
+    String path = AppView.showSaveDialog(studentTable, "json");
+    if (path != null) {
+        exportService.exportToJSON(AppView.getTableItems(studentTable), path);
+        AppView.notifySuccess("Fichier JSON exporté.");
+    }
+}
+// Méthodes pour exporter les données affichées dans la TableView vers différents formats (CSV, JSON, XML, HTML)
+@FXML
+private void handleExportXML() {
+    String path = AppView.showSaveDialog(studentTable, "xml");
+    if (path != null) {
+        exportService.exportToXML(AppView.getTableItems(studentTable), path);
+        AppView.notifySuccess("Fichier XML exporté.");
+    }
+}
+// Méthodes pour exporter les données affichées dans la TableView vers différents formats (CSV, JSON, XML, HTML)
+@FXML
+private void handleExportHTML() {
+    String path = AppView.showSaveDialog(studentTable, "html");
+    if (path != null) {
+        // On récupère les statistiques actuelles pour le rapport
+        String stats = studentDAO.getGlobalStats();
+        exportService.exportToHTML(AppView.getTableItems(studentTable), stats, path);
+        AppView.notifySuccess("Rapport HTML généré avec succès !");
+    }
+}
+    // Méthode pour afficher les statistiques globales (total d'élèves, moyenne générale, répartition par âge) en utilisant une requête SQL GROUP BY dans le DAO.
+    private void updateStatistics() {
+        List<Student> currentList = AppView.getTableItems(studentTable);
+        double sum = 0;
+        for (Student s : currentList) sum += s.getGrade();
+        double avg = currentList.isEmpty() ? 0 : sum / currentList.size();
+        
+        AppView.renderStats(statsCount, statsAverage, currentList.size(), avg);
+    }
+    // Méthode pour afficher les statistiques globales (total d'élèves, moyenne générale, répartition par âge) en utilisant une requête SQL GROUP BY dans le DAO.
     @FXML
-    private void handleExportJSON() { exportToFile("etudiants.json", "JSON", "*.json", "json"); }
-    @FXML
-    private void handleExportXML() { exportToFile("etudiants.xml", "XML", "*.xml", "xml"); }
-    // Méthode utilitaire pour gérer l'exportation dans différents formats, en affichant une boîte de dialogue pour choisir l'emplacement de sauvegarde du fichier et en appelant le Service d'exportation avec les données actuelles de la TableView (ex: pour centraliser la logique d'exportation et éviter la duplication de code dans les différentes méthodes d'exportation)
-    private void exportToFile(String defName, String desc, String ext, String type) {
-        File file = getSaveLocation(defName, desc, ext);
-        if (file != null) {
-            switch(type) {
-                case "csv" -> exportService.exportToCSV(studentTable.getItems(), file.getAbsolutePath());
-                case "json" -> exportService.exportToJSON(studentTable.getItems(), file.getAbsolutePath());
-                case "xml" -> exportService.exportToXML(studentTable.getItems(), file.getAbsolutePath());
-            }
-            showNotification("Export", "Fichier " + type.toUpperCase() + " généré !");
+    private void handleTableClick() {
+            Student s = (Student) AppView.getSelectedItem(studentTable);
+        if (s != null) { // Indispensable pour éviter des micro-erreurs au scroll
+            AppView.fillForm(s, fNameInput, lNameInput, ageInput, gradeInput);
         }
     }
-    // Méthode utilitaire pour afficher une boîte de dialogue de sélection de fichier pour l'exportation, en configurant le nom de fichier par défaut, la description et le filtre d'extension (ex: pour permettre à l'utilisateur de choisir facilement où sauvegarder le fichier exporté et dans quel format)
-    private File getSaveLocation(String defName, String desc, String ext) {
-        FileChooser fc = new FileChooser();
-        fc.setInitialFileName(defName);
-        fc.getExtensionFilters().add(new FileChooser.ExtensionFilter(desc, ext));
-        return fc.showSaveDialog(studentTable.getScene().getWindow());
-    }
-    // Méthodes utilitaires pour afficher des notifications d'information ou d'erreur à l'utilisateur, en utilisant des Alertes JavaFX (ex: pour informer l'utilisateur du succès d'une opération ou pour afficher un message d'erreur en cas de problème avec les données saisies ou les opérations effectuées)
-    private void showNotification(String title, String content) {
-        Alert a = new Alert(Alert.AlertType.INFORMATION);
-        a.setTitle(title); a.setHeaderText(null); a.setContentText(content); a.showAndWait();
-    }
-    // Méthode pour afficher une alerte d'erreur avec un titre et un message, en utilisant une Alert de type ERROR (ex: pour informer l'utilisateur d'un problème ou d'une erreur qui s'est produite, comme une validation échouée ou une opération qui n'a pas pu être effectuée)
-    private void showError(String title, String content) {
-        Alert a = new Alert(Alert.AlertType.ERROR);
-        a.setTitle(title); a.setHeaderText(null); a.setContentText(content); a.showAndWait();
-    }
-    // Méthode pour réinitialiser les filtres de recherche et les champs de saisie, ainsi que pour désélectionner tout étudiant dans la TableView (ex: lorsque l'utilisateur clique sur "Réinitialiser les filtres", cette méthode est appelée pour remettre l'interface dans son état initial, en effaçant les champs de recherche, les champs de saisie et en désélectionnant tout étudiant)
-    @FXML
-    private void handleResetFilters() {
-        searchFirstName.clear(); searchLastName.clear();
-        fNameInput.clear(); lNameInput.clear();
-        ageInput.clear(); gradeInput.clear();
-        ageFilterCombo.setValue("Tous");
-        studentTable.getSelectionModel().clearSelection();
-    }
-    // Méthode pour gérer la déconnexion de l'utilisateur, en changeant la scène pour revenir à l'écran de connexion (ex: lorsque l'utilisateur clique sur "Déconnexion", cette méthode est appelée pour le ramener à l'écran de connexion et lui permettre de se reconnecter ou de changer d'utilisateur)
+    // Méthode pour charger plus d'étudiants au scroll (pagination). Elle écoute les événements de scroll sur la TableView et charge la page suivante lorsque l'utilisateur atteint le bas du tableau.
     @FXML
     private void handleLogout(ActionEvent event) {
         UIUtils.switchScene(event, "WelcomeView.fxml", "LP Tracker - Connexion");
     }
-    // Méthode pour gérer le clic sur une ligne de la TableView, en affichant les détails de l'étudiant sélectionné dans les champs de saisie (ex: lorsque l'utilisateur clique sur un étudiant dans la liste, cette méthode est appelée pour remplir les champs de saisie avec les informations de l'étudiant sélectionné, afin de permettre une modification facile)
+    // Méthode pour réinitialiser tous les filtres et champs de recherche. Elle vide les champs texte, remet les ComboBox à leur valeur par défaut et rafraîchit la TableView pour afficher tous les étudiants.
     @FXML
-    private void handleTableClick(MouseEvent event) {
-        Student s = studentTable.getSelectionModel().getSelectedItem();
-        if (s != null) {
-            fNameInput.setText(s.getFirstName());
-            lNameInput.setText(s.getLastName());
-            ageInput.setText(String.valueOf(s.getAge()));
-            gradeInput.setText(String.valueOf(s.getGrade()));
-        }
-    }
-    // Méthode pour configurer l'infinite scrolling sur la TableView, en ajoutant un listener à la barre de défilement verticale pour charger automatiquement les données suivantes lorsque l'utilisateur atteint 90% du scroll (ex: pour permettre à l'utilisateur de faire défiler la liste des étudiants sans interruption, en chargeant les données par pages au fur et à mesure qu'il scroll)
-    private void setupInfiniteScrolling() {
-        for (Node node : studentTable.lookupAll(".scroll-bar")) {
-            if (node instanceof ScrollBar scrollBar && scrollBar.getOrientation() == Orientation.VERTICAL) {
-                scrollBar.valueProperty().addListener((obs, oldVal, newVal) -> {
-                    if (newVal.doubleValue() > (scrollBar.getMax() * 0.9) && !isLoading) {
-                        loadNextPage();
-                    }
-                });
-            }
-        }
-    }
-    // Méthode pour charger la page suivante de données depuis la base de données et l'ajouter à la liste observable utilisée par la TableView, en mettant à jour le flag isLoading pour éviter les chargements multiples simultanés (ex: lorsque l'utilisateur atteint 90% du scroll, cette méthode est appelée pour charger les étudiants suivants et les afficher dans la liste)
-    private void loadNextPage() {
-        isLoading = true;
-        currentPage++;
-        List<Student> nextStudents = studentDAO.getStudentsPaged(currentPage, ROWS_PER_PAGE);
-        if (nextStudents != null && !nextStudents.isEmpty()) masterData.addAll(nextStudents);
-        isLoading = false;
-    }
-    // Méthode pour afficher une alerte avec un style personnalisé, en essayant de charger une icône et une feuille de style CSS pour améliorer l'apparence de l'alerte (ex: pour rendre les messages d'alerte plus visuellement attrayants et cohérents avec le thème de l'application)
-    private void showAlert(javafx.scene.control.Alert.AlertType type, String title, String message) {
-        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(type);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
+    private void handleResetFilters() {
+        // 1. Demander confirmation
+        if (AppView.showConfirmation("Réinitialisation", "Voulez-vous vraiment effacer tous les filtres ?")) {
+            
+            // 2. Vider les champs texte (Filtres + Formulaire)
+            AppView.clearFields(fNameInput, lNameInput, ageInput, gradeInput, searchFirstName, searchLastName, searchField);
+            
+            // 3. Remettre la ComboBox sur "Tous" via l'utilitaire (Règle ton erreur actuelle)
+            AppView.resetComboBox(ageFilterCombo, "Tous");
 
-        // On récupère la fenêtre pour l'icône
-        javafx.stage.Stage stage = (javafx.stage.Stage) alert.getDialogPane().getScene().getWindow();
+            // 4. Rafraîchir les données
+            refreshTable();
+            
+            AppView.notifySuccess("Interface réinitialisée.");
+        }
+    }
+    // Méthode pour afficher les statistiques globales (total d'élèves, moyenne générale, répartition par âge) en utilisant une requête SQL GROUP BY dans le DAO.
+    @FXML
+    private void handleShowStatisticsChart() {
+        // On récupère les étudiants actuellement visibles (filtrés ou non)
+        List<Student> currentStudents = AppView.getTableItems(studentTable);
         
-        try {
-            // 1. Chargement de l'icône
-            java.io.InputStream iconStream = getClass().getResourceAsStream("/view/icon.png"); // Vérifie si l'icône est aussi dans /view/
-            if (iconStream != null) {
-                stage.getIcons().add(new javafx.scene.image.Image(iconStream));
-            }
-
-            // 2. Chargement du CSS (Déplacé ici pour éviter le crash si le chemin est faux)
-            java.net.URL cssUrl = getClass().getResource("/view/style.css");
-            if (cssUrl != null) {
-                alert.getDialogPane().getStylesheets().add(cssUrl.toExternalForm());
-                alert.getDialogPane().getStyleClass().add("my-alert");
-            }
-        } catch (Exception e) {
-            // En cas d'erreur, on ne fait rien, l'alerte s'affichera avec le style par défaut
-            System.out.println("⚠️ Style de l'alerte non chargé : " + e.getMessage());
+        if (currentStudents.isEmpty()) {
+            AppView.notifyWarning("Données vides", "Aucun étudiant à analyser.");
+            return;
         }
 
-        alert.showAndWait();
-    }
-    
-    // Méthode pour mettre à jour les statistiques affichées en fonction de la sélection actuelle dans la TableView, en calculant le nombre d'étudiants et la moyenne des notes, puis en affichant ces informations dans les labels correspondants (ex: pour donner à l'utilisateur une vue d'ensemble de la promotion, en montrant combien d'étudiants sont actuellement affichés et quelle est leur moyenne générale)
-    private void updateStatistics() {
-        ObservableList<Student> students = studentTable.getItems();
-        int count = students.size();
-        double sum = 0;
-
-        for (Student s : students) {
-            sum += s.getGrade(); // On utilise getGrade() comme convenu
-        }
-
-        double average = (count > 0) ? sum / count : 0;
-
-        statsCount.setText(String.valueOf(count));
-        statsAverage.setText(String.format("%.2f / 20", average));
+        // On appelle notre nouvelle classe
+        StatChartView.display(currentStudents);
     }
 }

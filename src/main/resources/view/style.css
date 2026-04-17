@@ -144,3 +144,81 @@
     cursor: hand;
     -fx-cursor: hand;
 }
+/* --- GRAPHIQUES --- */
+/* Personnalisation des couleurs du PieChart */
+.default-color0.chart-pie { -fx-pie-color: #27ae60; } /* Excellent - Vert */
+.default-color1.chart-pie { -fx-pie-color: #3498db; } /* Bien - Bleu */
+.default-color2.chart-pie { -fx-pie-color: #f1c40f; } /* Passable - Jaune */
+.default-color3.chart-pie { -fx-pie-color: #e74c3c; } /* Échec - Rouge */
+
+/* Style de la légende (les carrés) */
+.chart-legend {
+    background-color: transparent;
+   -fx-background-color: transparent;
+   padding: 12px;
+   -fx-padding: 20px;
+}
+
+.chart-legend-item {
+    fill: #2c3e50;
+    -fx-text-fill: #2c3e50;
+    font-size: 12px;
+    -fx-font-size: 12px;
+}
+
+/* Style de base du bouton graphique */
+.btn-stats {
+    background-color: #9b59b6;
+    -fx-background-color: #9b59b6;
+    -fx-text-fill: white;
+    cursor: hand;
+    -fx-cursor: hand;
+    -fx-background-radius: 5;
+    font-weight: bold;
+    -fx-font-weight: bold;
+    padding: 8 15;
+    -fx-padding: 8 15;
+    /* Transition fluide (JavaFX gère les changements d'état nativement) */
+}
+
+/* Effet Hover (Survol) */
+.btn-stats:hover {
+    background-color: #8e44ad; /* Un violet plus profond */
+    -fx-background-color: #8e44ad; /* Un violet plus profond */
+    -fx-scale-x: 1.05;             /* Agrandit légèrement le bouton */
+    -fx-scale-y: 1.05;
+}
+
+/* Effet Pressed (Clic) */
+.btn-stats:armed {
+    background-color: #7d3c98;
+    -fx-background-color: #7d3c98;
+    -fx-scale-x: 0.95;             /* Effet d'enfoncement */
+    -fx-scale-y: 0.95;
+}
+
+/* Pour les boutons des côtés (Bleu/Orange) */
+.side-button {
+    background-color: transparent;
+    -fx-background-color: transparent;
+    border-color: white;
+    -fx-border-color: white;
+    border-radius: 25;
+    -fx-border-radius: 25;
+    -fx-text-fill: white;
+}
+
+.side-button:hover {
+    background-color: #3d5afe;
+    -fx-background-color: #3d5afe; /* La couleur que tu avais en Java */
+    cursor: hand;
+    -fx-cursor: hand;
+
+}
+/* Pour les boutons d'action (Verts) */
+.green-button:hover {
+    -fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
+    cursor: hand;
+    -fx-cursor: hand;
+}

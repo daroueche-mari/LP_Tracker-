@@ -6,7 +6,8 @@ public class User { // Classe modèle représentant un utilisateur de l'applicat
     private String passwordHash;
     private String salt;
     private String avatarUrl;
-
+    // --- CONSTRUCTEUR ET GETTERS/SETTERS ---
+    // Constructeur complet pour créer un objet User à partir des données récupérées de la base de données (ex: lors de la connexion ou de l'affichage du profil)
     public User(int id, String username, String passwordHash, String salt, String avatarUrl) { // Constructeur complet pour créer un objet User à partir des données récupérées de la base de données (ex: lors de la connexion ou de l'affichage du profil)
         this.id = id;
         this.username = username;

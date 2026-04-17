@@ -34,7 +34,6 @@
                            style="-fx-background-radius: 10; -fx-background-color: #34495e; -fx-text-fill: white; -fx-prompt-text-fill: #95a5a6;" />
             
             <Button mnemonicParsing="false" onAction="#handleRegister" prefHeight="45.0" prefWidth="250.0" 
-                    onMouseEntered="#handleHoverEnterSide" onMouseExited="#handleHoverExitSide"
                     style="-fx-background-color: transparent; -fx-border-color: white; -fx-border-radius: 25; -fx-text-fill: white; -fx-cursor: hand;" 
                     text="CRÉER UN COMPTE">
                <font><Font name="System Bold" size="14.0" /></font>
@@ -66,7 +65,6 @@
                            style="-fx-background-radius: 10; -fx-background-color: #d35400; -fx-text-fill: white; -fx-prompt-text-fill: #f39c12;" />
             
             <Button mnemonicParsing="false" onAction="#handleLogin" prefHeight="45.0" prefWidth="250.0" 
-                    onMouseEntered="#handleHoverEnterGreen" onMouseExited="#handleHoverExitGreen"
                     style="-fx-background-color: white; -fx-text-fill: #e67e22; -fx-background-radius: 25; -fx-cursor: hand; -fx-font-weight: bold;" 
                     text="SE CONNECTER">
                <font><Font name="System Bold" size="14.0" /></font>

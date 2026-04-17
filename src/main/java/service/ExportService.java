@@ -3,6 +3,7 @@ package service;
 import model.Student;
 import dao.StudentDAO;
 import java.io.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -19,26 +20,49 @@ public class ExportService {
             }
         } catch (IOException e) { e.printStackTrace(); }
     }
+    // --- IMPORTATION CSV (Bonus) ---
+    // Méthode pour importer une liste d'étudiants à partir d'un fichier CSV. Elle lit le fichier ligne par ligne, nettoie les données, crée des objets Student, et les ajoute à la base de données via le DAO.
+    public void importFromCSV(String filePath, StudentDAO dao) {
+    List<Student> students = new ArrayList<>();
+    
+    try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+        br.readLine(); // Sauter l'en-tête
+        String line;
+        
+        while ((line = br.readLine()) != null) {
+            if (line.trim().isEmpty()) continue; // Ignore les lignes vides en fin de fichier
 
-    public void importFromCSV(String filePath, StudentDAO dao) { // Méthode pour importer des étudiants depuis un fichier CSV (ex: pour ajouter rapidement une liste d'étudiants à la promotion sans passer par l'interface de saisie)
-        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
-            String line;
-            br.readLine(); // Sauter l'en-tête
-            while ((line = br.readLine()) != null) {
-                // On gère les fichiers qui pourraient utiliser des virgules ou points-virgules
-                String[] data = line.split("[,;]"); 
-                if (data.length >= 4) {
-                    String fName = data[0].trim();
-                    String lName = data[1].trim();
-                    int age = Integer.parseInt(data[2].trim());
-                    // Remplacement de la virgule par un point pour le parsing du Double
-                    double grade = Double.parseDouble(data[3].trim().replace(",", "."));
-                    
-                    dao.addStudent(new Student(0, fName, lName, age, grade));
-                }
+            String[] data = line.split("[,;]");
+            if (data.length >= 4) {
+                // NETTOYAGE COMPLET
+                String fName = clean(data[0]);
+                String lName = clean(data[1]);
+                
+                // Parsing de l'âge (sécurisé)
+                int age = Integer.parseInt(clean(data[2]));
+                
+                // Parsing de la note (on gère "7,82" -> 7.82)
+                String rawGrade = clean(data[3]).replace(",", ".");
+                double grade = Double.parseDouble(rawGrade);
+                
+                students.add(new Student(0, fName, lName, age, grade));
             }
-        } catch (Exception e) { e.printStackTrace(); }
+        }
+        
+        // On envoie tout en un seul bloc pour la performance
+        dao.addStudentsBatch(students);
+        System.out.println("✅ " + students.size() + " étudiants importés avec succès !");
+        
+    } catch (Exception e) {
+        System.err.println("❌ Erreur import CSV : " + e.getMessage());
     }
+}
+
+// Petite méthode utilitaire pour enlever les guillemets et espaces invisibles
+private String clean(String input) {
+    if (input == null) return "";
+    return input.replace("\"", "").trim();
+}
 
     // --- JSON ---
     public void exportToJSON(List<Student> students, String filePath) { // Méthode pour exporter la liste des étudiants dans un fichier JSON (ex: pour partager les données de la promotion dans un format moderne et facilement intégrable avec d'autres systèmes ou applications)
