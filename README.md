@@ -9,16 +9,16 @@
 
 ---
 
-## ☁️ Architecture Cloud (Supabase)
+## Architecture Cloud (Supabase)
 
 Pour ce projet, nous avons fait le choix d'une architecture **Cloud-First** en migrant la base de données locale vers **Supabase** (PostgreSQL).
 
-### 🚀 Pourquoi Supabase ?
+### Pourquoi Supabase ?
 * **Disponibilité** : L'application est accessible depuis n'importe quel poste sans installation de serveur local.
 * **Sécurité** : Gestion centralisée des accès et chiffrement des données.
 * **Scalabilité** : Infrastructure robuste reposant sur AWS (région `eu-west-1`).
 
-### 🛠 Configuration de la Connexion
+### Configuration de la Connexion
 L'application se connecte via le driver **JDBC PostgreSQL**. Les identifiants sont configurés dans la classe `dao.DatabaseConnection` :
 
 ```java
@@ -28,14 +28,14 @@ private static final String USER = "postgres.[project-id]";
 private static final String PASSWORD = "****************";
 ```
 
-### 📊 Schéma de la Base de Données
+### Schéma de la Base de Données
 Le schéma est composé de deux tables principales optimisées pour la performance :
 * **`users`** : Stockage des comptes administrateurs avec hachage **BCrypt + Sel**.
 * **`student`** : Gestion des données académiques (Nom, Prénom, Âge, Note).
 
 ---
 
-## 🛠 Installation & Déploiement
+## Installation & Déploiement
 
 1.  **Prérequis** : Java 25 et Maven installés.
 2.  **Compilation** : 
@@ -91,7 +91,7 @@ Gère les comptes utilisateurs de l'application.
 
 ---
 
-## 🛠️ Stack Technique
+## Stack Technique
 
 * **Interface** : JavaFX 25 (MVC Pattern)
 * **Design** : CSS personnalisé (Thème "Moderne Connecté") & Scene Builder
